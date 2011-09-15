@@ -2,7 +2,7 @@
 
 <% prepared_data = prepare_json_data(@elements, @element_links).to_json.html_safe %>
 <% content_for :head do %>
-	<%= javascript_include_tag "ajp.utilities", "csd/csd", "csd/csd.views" %>
+	<%= javascript_include_tag "ajp.utilities", "csd/csd", "csd/csd.data_manager", "csd/csd.views", "csd/csd.model" %>
 	<script id="csd_data">
 		$(document).ready( function () {
 			CSD.data_manager.add_data(<%= prepared_data %>);

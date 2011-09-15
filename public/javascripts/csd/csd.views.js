@@ -1,4 +1,4 @@
-$(function () {    
+//$(function () {    
 
 //############################### 
 //###############################    VIEW
@@ -31,7 +31,7 @@ $(function () {
 		
 		// @TODO should make sure all elements in CSD.views_data are actually connected to each other.
 		
-		//find the element id which has no onnections to another element in CSD.views_data, i.e. which is on display.
+		//find the element id which has no connections to another element in CSD.views_data, i.e. which is on display.
 		root_element_id = CSD.views_helper.find_root_element_id_to_display(CSD.views_data);
 		// @TODO logic to handle root_element_id  when it returns an array of length 0 because the current selection of elements is cyclic
 		//	or > 1 because there are more than 2 possible root elements.
@@ -95,16 +95,14 @@ $(function () {
 	CSD.views.for_an_element = function(the_element_to_display, connection_element_from_this_element_to_a_parent_element, indent) { //, element_connections_with_the_element){
 		var indent = indent || 0,
 			the_jquery_html = '',
-			connection_array,
 			child_div_for_connection_to_parent = '',
 			child_div_for_element = '',
 			options_for_element = '',
 			child_div_for_options = '';
 		
 		if (connection_element_from_this_element_to_a_parent_element !== undefined) {
-			connection_array = connection_element_from_this_element_to_a_parent_element.content().split(',');
 			child_div_for_connection_to_parent = $('<div></div>').append(
-				(connection_array[1] + ' <- ' + connection_array[0]).toString()
+				(connection_element_from_this_element_to_a_parent_element.connect_to() + ' <- ' + connection_element_from_this_element_to_a_parent_element.connect_from()).toString()
 			 	).attr('id', 'element_' + connection_element_from_this_element_to_a_parent_element.id()).addClass('element'); 
 		}
 		
@@ -184,8 +182,8 @@ $(function () {
 	CSD.views.add_onclick_handlers = function () {
 		// add onClick handlers
 		$('.element_option').click(function() {
-  			//alert('Handler for .click() called on ' + this.id);
-  			//alert(AJP.utilities.hello());
+  			//d/ alert('Handler for .click() called on ' + this.id);
+  			//d/ alert(AJP.utilities.hello());
   			var clicked_html_id = this.id, 
   				html_id_to_test_for = /this_has_not_been_defined_yet/, 
   				element_id,
@@ -199,17 +197,11 @@ $(function () {
   			if (html_id_to_test_for.test(clicked_html_id)){
   				element_ids = clicked_html_id.replace(html_id_to_test_for, "");
   				element_ids = element_ids.split('_');
-  				//var a_connection_element_to_this_element = CSD.data.element_by_id[element_id].connection_elements().connection_elements_connecting_from_this_element[0]; //@TODO  replace [0] with iteration
-  				//id_of_element_to_get = a_connection_element_to_this_element.content().split(',')[1];  //  [1] pulls out the second value from the content field,
+  				//d/ var a_connection_element_to_this_element = CSD.data.element_by_id[element_id].connection_elements().connection_elements_connecting_from_this_element[0]; //@TODO  replace [0] with iteration
+  				//d/ id_of_element_to_get = a_connection_element_to_this_element.content().split(',')[1];  //  [1] pulls out the second value from the content field,
   																									  //  which is the id of the element connecting from this element.
-  				//CSD.model.get_element_by_id_and_call_function(id_of_element_to_get, function () {
-  				
-  						CSD.views_manager.add_element(element_ids[0]);
-  						CSD.views_manager.add_element(element_ids[1]);
+  						CSD.views_manager.add_element([parseInt(element_ids[0]), parseInt(element_ids[1])]);
   						CSD.views.show_view();
-  				//	}
-  				//);
-  				
   			}
 
 
@@ -256,7 +248,7 @@ $(function () {
 		
 	CSD.views_helper.find_root_element_id_to_display = function (array_of_element_ids) {
 		// go through array of element_ids and pull out each element in turn.
-		//	Record each element that has no connections to any other elements in the 
+		//	Record each element that has no iel_links to any other elements in the 
 		//	'array_of_element_ids'.  If there is only 1, then this is the root and return that ( as an array of length 1).  
 		//	If there is more than 1 (i.e. the list of element id_s results in the layout having 
 		//	an upwards branch) or 0 (i.e. is cyclic) then
@@ -268,7 +260,7 @@ $(function () {
 			an_element = undefined,
 			i_two = 0,
 			len_two = 0,
-			connections_from_this_elements = [],
+			connections_from_this_element = [],
 			number_of_connections_from_an_element = 0,
 			a_connected_to_element = undefined,
 			id_of_a_connected_to_element = undefined;
@@ -281,32 +273,110 @@ $(function () {
 			if (an_element === undefined) {
 				console.log('Requested element id of ' + array_of_element_ids[i] + ' does not exist locally so will be ignored from finding the root element for displaying the view.  # in CSD.views_helper.find_root_element_id_to_display');
 			} else {
-				//  cycle through each element that the current element 'an_element' connects to.
-				connections_from_this_elements = an_element.connection_elements().connection_elements_connecting_from_this_element; 
-				len_two = connections_from_this_elements.length;
-				number_of_connections_from_an_element = 0;
-				
-				for (i_two=0; i_two < len_two; i_two += 1) {
-					//	get each "connected to" element's id.  
-					id_of_a_connected_to_element = connections_from_this_elements[i_two].id();
+				if (an_element.element_type() === 'connection') {
+					//the element is a connection so see if it connects to any elements in the 'array_of_element_ids'
+					// if yes: don't do any thing.  If no: then this is a root element
+					var a = an_element.connect_to(),
+						b = $.inArray(an_element.connect_to(), array_of_element_ids);
 					
-					// If it's in the 'array_of_element_ids', add 1 to number_of_connections_from_an_element
-					if ( ($.inArray(id_of_a_connected_to_element, array_of_element_ids)) !== -1) {
-						number_of_connections_from_an_element += 1;
+					if ( ($.inArray(an_element.connect_to(), array_of_element_ids)) === -1 ) {
+						result_id.push(an_element.id());
 					}
-				}
+						
+				} else {
+				//
 				
-				// add the id of 'an_element' to the 'result_id' if it's number_of_connections_from_an_element == 0 
-				//	i.e. this is the list of element's to display to the user to pick which root 
-				//	of the discussion they'd like to see.
-				if (number_of_connections_from_an_element === 0) {
-					result_id.push(an_element.id());
+					//  cycle through each element that the current element 'an_element' connects to.
+					connections_from_this_element = an_element.connection_elements().connection_elements_connecting_from_this_element; 
+					len_two = connections_from_this_element.length;
+					number_of_connections_from_an_element = 0;
+					
+					for (i_two=0; i_two < len_two; i_two += 1) {
+						//	get each "connected to" element's id.  
+						id_of_a_connected_to_element = connections_from_this_element[i_two].id();
+						
+						// If it's in the 'array_of_element_ids', add 1 to number_of_connections_from_an_element
+						if ( ($.inArray(id_of_a_connected_to_element, array_of_element_ids)) !== -1) {
+							number_of_connections_from_an_element += 1;
+						}
+					}
+					
+					// add the id of 'an_element' to the 'result_id' if it's number_of_connections_from_an_element == 0 
+					//	i.e. this is the list of element's to display to the user to pick which root 
+					//	of the discussion they'd like to see.
+					if (number_of_connections_from_an_element === 0) {
+						result_id.push(an_element.id());
+					}
 				}
 			}
 		}
 		
 		return result_id;
 	};
+	
+	
+	
+//############################### 
+//###############################    VIEWS MANAGER    - keeps track of what should and should not be displayed   
+//############################### 
+	
+//	CSD.views_manager.set_up_views_data_structure = function () {
+//		if (AJP.u.keys(CSD.views_data).length ===0) {
+//			CSD.views_data = [];  // this will contain a { root_element: [and an array of elements that should connect to it that it can display.] }
+//		}
+//	};
+	
+	CSD.views_manager.add_element = function (element_to_add) {  //   element_to_add can be an element object or the id of an element.
+		var ids_of_element_to_add = undefined,
+			id_of_element_to_add = undefined,
+			index_of_element_id = undefined;
 
-});
+		// ensure a valid id_of_element_to_add is calculated from the element_to_add parameter
+		if (!AJP.u.is_array(element_to_add)) {
+			if (typeof element_to_add === 'number') {
+				id_of_element_to_add = element_to_add;
+			} else if (typeof element_to_add === 'string') {
+				id_of_element_to_add = parseInt(element_to_add);
+				if (isNaN(id_of_element_to_add)) {
+					console.log('a string of value: ' + element_to_add + ' has been fed to CSD.views_manager.add_element but does not evaluate to give a valid element id');
+					throw {
+						name: 'invalid string for CSD.views_manager.add_element',
+						message: 'a string of value: ' + element_to_add + ' has been fed to CSD.views_manager.add_element but does not evaluate to give a valid element id\n' + 
+									'please send a valid number containing string, valid number or an element object'
+					};
+				}
+			} else {
+				id_of_element_to_add = element_to_add.id();
+			}
+			ids_of_element_to_add = [id_of_element_to_add];
+		} else {
+			ids_of_element_to_add = element_to_add;
+		}
+		
+		
+		for (var i=0; i < ids_of_element_to_add.length; i += 1) {
+			id_of_element_to_add = ids_of_element_to_add[i];
+			//check if it's already in the array of element_ids to display to prevent duplicates
+			index_of_element_id = $.inArray(id_of_element_to_add, CSD.views_data);
+			
+			if (index_of_element_id === -1 ) {
+				// element_id is not in array so include it
+				CSD.views_data.push(parseInt(id_of_element_to_add));
+			}
+		};
+
+		
+	};
+
+
+
+	CSD.views_manager.remove_element = function (element_to_add) { 
+		var id_of_element_to_remove = element_to_remove.id();
+		
+		CSD.views_data = jQuery.grep(CSD.views_data, function(value) {  //@TODO reaplce with .remove! specified in AJP.utilities.
+    		return value != id_of_element_to_remove;
+		});
+	};
+
+//});
 
