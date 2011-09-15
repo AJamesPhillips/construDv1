@@ -1,0 +1,30 @@
+<table class="profile" summary="Profile information">
+  <tr>
+	<td class="main">
+		<h1>
+			<%= gravatar_for @user %>
+			<ul>
+				<li>Name: &nbsp; <%= @user.name %></li>
+				<li>Email: &nbsp; <%= @user.email %></li>
+			</ul>
+		</h1>
+		<%#= render 'follow_form' if signed_in? %>
+		<%# unless @user.activities.empty? %>        
+			<%#= will_paginate @activities %>    			
+			<table class="activities" summary="User activities">          
+				<%#= render @activities %>        
+			</table>
+			<%#= will_paginate @activities %>      
+		<%# end %>    
+	</td>
+    
+	<td class="sidebar round">      
+		<strong>Name</strong> <%= @user.name %><br />      
+		<strong>URL</strong> <%= link_to user_path(@user), @user %><br />  <!-- Same as <%= link_to user_path(@user), user_path(@user) %> -->
+		<strong>Activities</strong> <%#= @user.activities.count %>    
+		<%#= render 'shared/stats' %>
+	</td>
+  </tr>
+</table>
+
+

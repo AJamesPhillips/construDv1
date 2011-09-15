@@ -1,0 +1,13 @@
+<div id="discussion_container"><div class="divClear"></div></div>
+
+<% prepared_data = prepare_json_data(@elements, @element_links).to_json.html_safe %>
+<% content_for :head do %>
+	<%= javascript_include_tag "ajp.utilities", "csd/csd", "csd/csd.views" %>
+	<script id="csd_data">
+		$(document).ready( function () {
+			CSD.data_manager.add_data(<%= prepared_data %>);
+			CSD.views_manager.add_element(<%= @array_of_ids %>);
+			CSD.controller.display_discussion();
+		});
+	</script>
+<% end %>

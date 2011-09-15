@@ -1,0 +1,37 @@
+<header>
+	<% logo = image_tag("logo.png", :alt => "Sample App", :class => "round") %>
+	<%= link_to logo, root_path%>
+	<nav class="round">
+		<div>
+		<ul>
+			<li><%= link_to "Home", root_path %></li>
+
+ 			<% if signed_in? %>     
+ 				<li><%= link_to "Users", users_path %></li> 
+				<% if current_user.admin? %>
+					<li><%= link_to "List of Admins", admins_path %></li>
+				<% end %>
+				<li><%= link_to "Profile", current_user %></li> <!-- the profile link's URL is simply current_user as Rails can--> 
+										<!--figure out from the returned User object, the appropriate URL, in this case it is an -->
+										<!--HTML GET request to /user which will hit the 'show' method in the user controller ... I think-->      
+				<li><%= link_to "Settings", edit_user_path(current_user) %></li>
+			<% end %>
+
+			<li><%= link_to "Help", help_path %></li>
+
+			<% if signed_in? %>
+				<li><%= link_to "Sign out", signout_path, :method => 'delete' %></li> 
+			<% else %> 
+				<li><%= link_to "Sign in", signin_path %></li> 
+			<% end %>
+
+		</ul>
+		</div>
+		<div>
+			<% form_tag elements_path, :method => 'get' do %>
+				<%= text_field_tag :search, @search_returned_empty, :placeholder => "Search Constructive Discussion...", :style => "width: 210px; margin: 0 2px 7px 7px" %>
+				<%= submit_tag "Search", :name => nil %>
+			<% end %>
+		</div>
+	</nav>
+</header>

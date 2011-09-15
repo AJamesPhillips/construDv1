@@ -1,0 +1,29 @@
+You search for "<%= params[:search] %>" returned <%= pluralize @elements.count, 'result' %>
+<br /> <br /> 
+
+<% if @elements.empty? && signed_in? %>
+	Create New discussion Statement:
+	<%= form_for @element do |f| %>
+		<%= f.text_field :content, :placeholder => 'statement' %>
+		<%= f.hidden_field :element_type, :value => 'node' %>
+		<%= f.hidden_field :subtype, :value => 'statement' %>
+		<%= f.submit 'create' %>
+	<% end %>
+<% elsif @elements.empty? && !signed_in? %>
+	Sign in to create a new discussion.
+<% else %>
+	<table>
+		<tr>
+			<th>Content</th>
+			<th>Type</th>
+			<th>Created by (user ID)</th>
+		</tr>
+	<% @elements.each do |element| %>
+		<tr>
+			<td><%= link_to element.content, element, :disable_with => 'fetching...' %><%#, :remote => true %></td>
+			<td><%= element.subtype %></td>
+			<td><%= element.user_id %></td>
+		</tr>
+	<% end %>
+	</table>
+<% end %>

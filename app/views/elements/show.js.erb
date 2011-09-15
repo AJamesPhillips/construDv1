@@ -1,0 +1,6 @@
+<% prepared_data = prepare_json_data(@elements, @element_links).to_json.html_safe %>
+<% logger.debug ">> prepare_json_data(@elements, @element_links).to_json.html_safe = #{prepared_data}   # in views/elements/show.js.erb" %>
+
+//alert("1 # in show.js.erb");
+CSD.data_manager.add_data(<%= prepared_data %>);
+//alert("2 # in show.js.erb");

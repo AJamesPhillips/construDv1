@@ -1,0 +1,12 @@
+<div class="field">
+	<%= label_tag :old_password, "Old password" %><sup> *required</sup><br />
+	<%= password_field_tag :old_password %>
+</div>
+<div class="field">
+	<%= f.label :password, "New password" %><br />
+	<%= f.password_field :password %>
+</div>
+<div class="field">
+	<%= f.label :password_confirmation, "Confirm New Password" %><br />
+	<%= f.password_field :password_confirmation %>
+</div>

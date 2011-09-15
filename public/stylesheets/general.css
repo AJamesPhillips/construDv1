@@ -1,0 +1,19 @@
+.divClear {
+	clear: both;
+}
+   
+.Clear-left {
+	clear: left;
+}
+   
+.Clear-right {
+	clear: right;
+}
+
+.float-left {
+	float: left;
+}
+
+.float-right {
+	float: right;
+}

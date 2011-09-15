@@ -1,0 +1,15 @@
+<h1> <%= title %> </h1> 
+
+<%= will_paginate %>  <!--The will_paginate method is a little magical; 
+	inside a users view, it automatically looks for an @users object, 
+	and then displays pagination links to access other pages.
+	will_paginate expects an object of class WillPaginate::Collection.
+	rather than the array of User.all-->
+
+<table class="users">  
+  <%= render @users %>  <!-- fucking scary but rails infers that @users is a list of User objects,
+							and when called with a collection like this, will automatically 
+							iterate through them and render each one with the _user.html.erb partial.-->
+</table>
+
+<%= will_paginate %>

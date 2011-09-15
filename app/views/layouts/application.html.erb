@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+
+		<title><%= title %></title>
+		<%= csrf_meta_tag %> <!--helps prevents cross-site request forgery attacks-->
+		<%= render 'layouts/stylesheets' %>
+		<%= javascript_include_tag :defaults %>   <!--Required by rails if it wants to simulate a DELETE http verb (and also a PUT verb?)-->
+		
+		
+		<%= yield :head %>
+	</head>
+	<body>
+
+		<div class="container">
+			<%= render 'layouts/header' %>
+			
+			<section class="round">
+				<% flash.each do |flash_key, flash_value| %>
+					<div class="flash <%= flash_key %>"><%= flash_value %></div>  <!-- can also write as  '<%= content_tag(:div, flash_value, :class => "flash #{flash_key}") %>' -->
+				<% end %>
+				<%= yield %>
+			</section>
+
+			<%= render 'layouts/footer' %>
+			<%= params.class if Rails.env.development? %>
+			<%= debug(params) if Rails.env.development? %>
+		</div>
+
+	</body>
+</html>

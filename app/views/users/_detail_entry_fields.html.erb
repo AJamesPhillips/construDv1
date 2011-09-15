@@ -1,0 +1,13 @@
+<div class="field">
+	<%= f.label :password %><br />
+	<%= f.password_field :password %>
+</div>
+<div class="field">
+	<%= f.label :password_confirmation, "Confirmation" %><br />
+	<%= f.password_field :password_confirmation %>
+</div>
+<div class="field">
+	<% require 'secret_code' %>
+	<%= f.label :secret_code, description_of_use_for_secret_code %><sup> *required</sup><br />
+	<%= f.password_field :secret_code %>
+</div>

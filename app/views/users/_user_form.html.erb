@@ -1,0 +1,18 @@
+<div class="user_form">
+	<%= render 'shared/error_messages', :object => f.object %>
+	<div class="field" >
+		<%= f.label :name %><br />
+		<%= f.text_field :name %>
+	</div>
+	<div class="field">
+		<%= f.label :email %><br />
+		<%= f.text_field :email %>
+	</div>
+	
+	<%= @user.id.nil? ? (render 'detail_entry_fields', :f => f) : 
+						(render 'detail_editing_fields', :f => f)%>
+	
+	<div class="actions">    
+		<%= f.submit @submit_label %>  
+	</div> 
+</div>
