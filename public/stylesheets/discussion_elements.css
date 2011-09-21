@@ -1,0 +1,292 @@
+#loading {
+	position: fixed;
+	top: 0px;
+	background-color: white;
+	display: block;
+	opacity: 0.95;
+	z-index: 2147483646;
+}
+
+#main_page {
+	position: absolute;
+	top: 0px;
+	width: 1024px;
+	padding: 0 0 20px 0;
+	z-index: 0;
+}
+
+#main_page, div.symbol {
+	background-color: #fbfcfe;
+}
+
+
+
+.discussion_heading_part {
+	margin: 0px 20px 0px;
+}
+
+
+.discussion_heading_part h3 {
+	margin: 5px 5px;
+}
+
+
+.discussion_side {
+	margin: 20px 20px 0px 20px;
+	float: left;
+	width: 29%;
+	
+}
+.discussion_side_heading h4 {
+	margin: 0;
+}
+
+.side_specific_definition {
+	font-style: italic; 
+}
+
+
+#author_and_critic {
+	width: 100px;
+}
+
+
+#author_and_critic h5 {
+	margin: 0px;
+}
+
+
+
+
+/* discussion elements */
+
+div.element_outer {
+    z-index: 1;
+    position: relative; /*needed for z-index to work.*/
+	background-color: white; /*needed for the horizontal element-outers to block their horizontal connection symbols from view*/
+}
+div.element_outer > div.element_inner {
+	word-wrap: break-word;
+	background-color: white;
+    border: 1px solid #A9A9A9;
+	padding: 0 5px;
+	display:inline-block; /*shrinks div to fit text */ 
+}
+div.element_outer > div.element_inner.hovered {
+  	background-color: #ff0;
+}
+
+
+div.element_outer.horizontal + div.vertical_connection {
+}
+div.element_outer.horizontal + div + div.element_outer {
+}
+
+
+div.element_group {
+    padding: 0 0 12px 15px;
+}
+div.element_group.horizontal {
+	position: relative;
+	top: -11px;
+	padding-bottom: 0;
+}
+div.horizontal_connection > div.element_group.horizontal {
+	position: relative;
+	/*top: -15px;
+	 * 
+	 */
+	top: -27px;
+	padding-left:30px
+}
+div.horizontal_connection > div.element_group {
+	position: relative;
+	top: -15px;
+}
+
+
+
+
+div.vertical_connection {  /* div.vertical_connection:not(.unused) */
+    min-height: 25px;
+    /*margin-left: 10px;*/
+    margin-left: 8px;
+    padding-left: 2px;
+    position: relative;
+    /*z-index: 3;*/
+}
+
+div.vertical_connection > div.symbol_container {
+	position: absolute;
+	width: 15px;
+	height: 100%;
+	z-index: 1;
+	left: -5px;
+}
+div.vertical_connection.dispute > div.symbol_container {
+    border-right: thin solid; 
+    border-left: thin solid;
+    width: 13px;
+}
+div.dispute > div.symbol_container, div.dispute > div.symbol_container > div > div.symbol {
+	background-color: #fdd;
+}
+
+div.vertical_line {
+	position: absolute;
+	border-left: thin solid black;
+    margin-left: 7px;
+    height: 100%;
+	z-index: 2;
+}
+div.vertical_connection.dispute > div > div.vertical_line {
+	margin-left: 6px;
+}
+
+div.symbol {
+    position: absolute;
+    left:-5px;
+    z-index: 3;
+	line-height: 0.95em;
+}
+
+
+	
+div.vertical_connection.unused {
+	border: thin solid white;
+	margin-bottom: -20px;
+}/*
+div.vertical_connection.hovered.unused {  /* div.vertical_connection.hovered:not(.unused) * /
+    border-left: medium dotted black; 
+}
+*/
+div.vertical_connection > div.symbol_container + div.vertical_connection {  /* experimental.  Used when more than two connections are made between two elements*/
+	margin: 0 0 0 20px; 
+}
+/*
+div.vertical_connection_container + div.vertical_connection.hovered {  /* experimental.  Used when more than two connections are made between two elements* /
+	margin: 0 0 0 8px; 
+}*/
+
+
+div.horizontal_connection {
+	padding-top: 40px;
+	padding-left: 1px;
+}
+div.horizontal_connection + div.horizontal_connection {
+	padding-top: 5px;
+}
+div.element_group + div.horizontal_connection {
+	padding-top: 25px;
+}
+div.horizontal_connection > div.symbol_container {
+	position: relative;
+	z-index: 1;
+	top: -8px;
+	height:15px;
+}
+div.horizontal_line {
+	position: absolute;
+	border-top: thin solid;
+    margin-top: 6px;
+	z-index: 2;
+	width: 100%;
+}
+div.horizontal_connection > div.symbol_container > div > div.symbol {
+	top: -7px;
+	left: 0px;
+}
+
+div.horizontal_connection.dispute > div.symbol_container {
+    border-top: thin solid; 
+    border-bottom: thin solid;
+    height: 13px;
+}
+
+
+
+
+
+/*
+div.horizontal_connection.hovered {
+    border-top: medium dotted;
+    margin: 38px 0 5px -6px; 
+}*/
+/*
+div.horizontal_connection + div.horizontal_connection.hovered {
+    margin-top: 18px;
+}*/
+
+
+
+
+
+div.supports {
+    font-size: 0.8em;
+    
+}
+div.horizontal_connection > div.symbol_container > div > div.supports {
+    left: 0px;
+    background-color: transparent;
+}
+div.vertical_connection > div.symbol_container > div > div.supports {
+    left: -7px;
+    top:-2px;
+    background-color: transparent;
+}
+
+
+/*
+div.horizontal_connection > div.supports.symbol_container {
+	float:left;
+    margin: -9px -20px 0 -2px; /* the -20px from the right is to make it always flow properly.* /
+}*/
+
+
+div.refutes {
+	font-family: Helvetica, sans-serif;
+	font-size: 0.9em;
+}/*
+div.vertical_connection > div.refutes.symbol_container {
+    margin: 0px -20px 0 -5px;
+    line-height:0.95em;
+}*/
+
+
+div.questions {
+    font-size: 1.2em;
+}
+
+/*
+div.vertical_connection > div.questions.symbol_container {
+    margin: -2px -20px 0 -4px;
+    line-height:0.95em;
+}*/
+div.horizontal_connection > div.symbol_container > div > div.questions {
+	margin: -4px 0 0 0;
+	padding: 0 1px 0 1px;
+}
+
+
+
+div.believed_true > div.symbol_container > div {
+    color: #66CC00;
+    border-color: #66CC00;
+}
+
+div.believed_false > div.symbol_container > div {
+    color: blue;
+    border-color: blue;
+}
+
+div.unsure > div.symbol_container > div {
+    color: #FA3;
+    border-color: #FA3;
+}
+
+div.dispute.answered > div.symbol_container {
+    border-color: purple;
+}
+div.dispute.unanswered > div.symbol_container {
+    border-color: red;
+}

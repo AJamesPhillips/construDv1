@@ -1,3 +1,6 @@
+/*global CSD, AJP*/ // Used by JSLint to exclude CSD from search of undefined variables and functions.
+
+
 
 //$(function () {    
 
@@ -8,11 +11,32 @@
 	
 	CSD.data_manager.set_up_data_structure = function () {  // this functions is currently called in the javascript in elements/show.html.erb
 		if (AJP.u.keys(CSD.data).length === 0) {
-			CSD.data = {element_by_id: {size: 0},
-						inter_element_link_by_id: {size: 0},
-						inter_element_link: [] };
+			var new_data_holder = function () {
+				var a_data_holder = {},
+					size = 0,
+					get_size = function () {
+						return size;
+					},
+					set_size = function (new_size) {
+						size = parseInt(new_size);
+					},
+					increment_size = function (increment_size_by) {
+						size = size + parseInt(increment_size_by);
+					};
+					
+					a_data_holder = {
+						get_size: 		get_size,
+						set_size: 		set_size,
+						increment_size: increment_size};
+					return a_data_holder;
+			};
+			
+			CSD.data = { element_by_id: new_data_holder(),
+						 inter_element_link_by_id: new_data_holder() };
 		}
 	};
+	
+	CSD.data_manager.set_up_data_structure();
 	
 		
 	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available) {  //, degrees_of_neighbours) {
@@ -39,32 +63,36 @@
 //		}
 		
 		// implement AJAX for single element request
-		$.getJSON("http://localhost:3000/elements/" + array_of_elements_ids_to_get + ".json", function(data) {
-			var an_element = undefined,
-				i = 0,
-				len = array_of_elements_ids_to_get.length,
-				all_elements_are_now_present = true;
-			
-			CSD.data_manager.add_data(data);
-			//d/ alert('I am ready noiw! and array_of_elements_ids_to_get is_array = ' + (AJP.u.is_array(array_of_elements_ids_to_get)) + ' typeof = ' + (typeof array_of_elements_ids_to_get));
-			
-			// check each element is now available
-			for (i = 0; i < len; i += 1) {
-				an_element = CSD.data.element_by_id[array_of_elements_ids_to_get[i]];
-				if (an_element === undefined) {
-					all_elements_are_now_present = false;
-					console.log('invalid request\n  element id of ' + array_of_elements_ids_to_get + ' does not exist.  # in CSD.model.get_element_by_id_and_call_function');
-					//throw {
-					//	name: 'invalid request',
-					//	message: 'element id of ' + array_of_elements_ids_to_get + 'does not exist'
-					//};
+		if (array_of_elements_ids_to_get.length !== 0) {
+			$.getJSON("http://localhost:3000/elements/" + array_of_elements_ids_to_get + ".json", function(data) {
+				var an_element = undefined,
+					i = 0,
+					len = array_of_elements_ids_to_get.length,
+					all_elements_are_now_present = true;
+				
+				CSD.data_manager.add_data(data);
+				//d/ alert('I am ready noiw! and array_of_elements_ids_to_get is_array = ' + (AJP.u.is_array(array_of_elements_ids_to_get)) + ' typeof = ' + (typeof array_of_elements_ids_to_get));
+				
+				// check each element is now available
+				for (i = 0; i < len; i += 1) {
+					an_element = CSD.data.element_by_id[array_of_elements_ids_to_get[i]];
+					if (an_element === undefined) {
+						all_elements_are_now_present = false;
+						console.log('invalid request\n  element id of ' + array_of_elements_ids_to_get + ' does not exist.  # in CSD.data_manager.get_data_by_ajax');
+						//throw {
+						//	name: 'invalid request',
+						//	message: 'element id of ' + array_of_elements_ids_to_get + 'does not exist'
+						//};
+					}
 				}
-			}
-			
-			if (all_elements_are_now_present && (function_to_call_once_data_is_available !== undefined)) {
-				function_to_call_once_data_is_available();
-			}
-		});
+				
+				if (all_elements_are_now_present && (function_to_call_once_data_is_available !== undefined)) {
+					function_to_call_once_data_is_available();
+				}
+			});
+		} else {
+			console.log('invalid request\n  Array_of_elements_ids_to_get of ' + array_of_elements_ids_to_get + ' is empty.  # in CSD.data_manager.get_data_by_ajax');
+		}
 		
 		
 //  	$.getScript("http://localhost:3000/elements/" + id_of_element_to_get + ".js", function(data, textStatus){
@@ -77,46 +105,39 @@
 	
 	
 	CSD.data_manager.add_data = function (some_json_element_and_iel_link_data) {  // this functions is currently called in the javascript in elements/show.html.erb
-		
-		CSD.data_manager.set_up_data_structure();
-		
 		var new_elements = some_json_element_and_iel_link_data["elements"];
 		var new_iel_links = some_json_element_and_iel_link_data["inter_element_links"];
 		CSD.data_manager.add_new_elements_from_data(new_elements);
 		CSD.data_manager.add_new_iel_links_from_data(new_iel_links);
-		CSD.data.inter_element_link = new_iel_links;
 	};
 	
 	
 	CSD.data_manager.add_new_elements_from_data = function (new_elements) {
-		var i = 0, len = new_elements.length, size = 0;
+		var i = 0, len = new_elements.length, num_of_elements_added = 0;
 		
 		for (i = 0; i < len; i++){
 			var the_potential_new_element = CSD.model.element(new_elements[i]);
 			var id_of_the_potential_new_element = the_potential_new_element.id();
 			if (!CSD.data.element_by_id[id_of_the_potential_new_element]) {
 				CSD.data.element_by_id[id_of_the_potential_new_element] = the_potential_new_element;
-				size += 1;
+				num_of_elements_added += 1;
 			} //d/ else { alert('Already have element of id = ' + keys[i] + ' in CSD.data.element_by_id'); }
 		}
-		CSD.data.element_by_id.size += size;
-		//d/ alert('CSD.data.element_by_id[\'size\'] = ' + CSD.data.element_by_id.size);
+		CSD.data.element_by_id.increment_size(num_of_elements_added);
 	};
 	
 	
 	CSD.data_manager.add_new_iel_links_from_data = function (new_iel_links) {
-		var i = 0, len = new_iel_links.length, size = 0;
+		var i = 0, len = new_iel_links.length, num_of_iel_links_added = 0;
 
 		for (i = 0; i < len; i++){
 			var new_iel_link_object = CSD.model.inter_element_link(new_iel_links[i]);
 			if ( CSD.data_manager.add_an_inter_element_link( new_iel_link_object ) ) { 
-				size += 1; // CSD.data_manager.add_an_inter_element_link() returns true if it's added a new link, therefore, increase size by 1.
+				num_of_iel_links_added += 1; // CSD.data_manager.add_an_inter_element_link() returns true if it's added a new link, therefore, increase size by 1.
 			};
 		}
 		// set new 'size?' of CSD.data.element_by_id
-		CSD.data.inter_element_link_by_id.size += size;
-		//d/ alert('CSD.data.inter_element_link_by_id.size = ' + CSD.data.inter_element_link_by_id.size);
-		
+		CSD.data.inter_element_link_by_id.increment_size(num_of_iel_links_added);
 	};
 
 

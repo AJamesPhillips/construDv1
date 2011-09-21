@@ -1,3 +1,6 @@
+/*global CSD, AJP*/ // Used by JSLint to exclude CSD from search of undefined variables and functions.
+
+
 
 //$(function () {    
 	
@@ -9,7 +12,8 @@
     			views: {},
     			views_helper: {},
     			views_manager: {},
-    			views_data: [],
+    			views_data: {to_display: [],
+    						 rendered: []},
     			controller: {},
     			routes: {}
     			};
