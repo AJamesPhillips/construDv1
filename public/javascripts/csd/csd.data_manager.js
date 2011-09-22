@@ -45,7 +45,7 @@
 	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available) {  //, degrees_of_neighbours) {
 		// implement AJAX for single element request
 		if (array_of_elements_ids_to_get.length !== 0) {
-			$.getJSON("http://localhost:3000/elements/" + array_of_elements_ids_to_get + ".json", function(data) {
+			$.getJSON(("/elements/" + array_of_elements_ids_to_get + ".json"), function(data) {
 				var an_element_id,
 					an_element = undefined,
 					i = 0,
