@@ -10,13 +10,15 @@
 
 	//   render argument elements in html using divs and jQuery
 	CSD.views.show_view = function () {
-		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.render_html);
+		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.render_html, CSD.views_manager.degrees_of_view);
 	};
 	
 	CSD.views.render_html = function () {
 		var root_element = undefined,
-		 	result_from_recursion,
-		 	the_jquery_html = $('#discussion_container').text('');
+		 	the_jquery_html = $('#discussion_container').text(''),
+		 	element_id_it_connects_to,
+		 	element_it_connects_to,
+		 	other_parameters = {};
 			
 		// @TODO should make sure all elements in CSD.views_data are actually connected to each other.
 		
@@ -27,97 +29,25 @@
 		//	or > 1 because there are more than 2 possible root elements.
 		//	i.e. will need a pop menu for user to select which root to display.
 		//d/ alert ('root_element_id = ' + root_element_id[0] + '  # in CSD.views.render_html');
+		var a_debug = root_element[0].id();
 		root_element = root_element[0];
 		
-		root_element.render_in_html(the_jquery_html);
+		//find out if it's a connection element.  if it is, find out if it connects to a node element, 
+		// if so, pass it {array_of_remaining_sibling_vertical_connections: []} so it renders as a vertical connection, rather than a horizontal one.
+		if (root_element.element_type() === 'connection') {
+			element_id_it_connects_to = root_element.connects_to();
+			element_it_connects_to = CSD.model.get_element_by_id(element_id_it_connects_to);
+			if (element_it_connects_to.element_type() === 'node') {
+				other_parameters = {array_of_remaining_sibling_vertical_connections: []};
+			}
+		}
 		
-		
-		//result_from_recursion = CSD.views.walker_function_v2(root_element_id);//, undefined, true, indent)
-		//the_jquery_html.append(result_from_recursion);
-		
+		root_element.render_in_html(the_jquery_html, other_parameters);
 		the_jquery_html.append($('<div></div>').addClass('divClear'));
 		CSD.views.add_onclick_handlers();
 	};
 	
-	/*
-	CSD.views.walker_function_v2 = function (root_element_id) { //}, connection_element_from_this_element_to_a_parent_element, is_root) {
-		//is_root = is_root || false;
-		
-		var root_element,
-			the_jquery_html_r = [],
-			connections__to__root_element,
-			return_only_ids = true,
-			connections_to_this_element_to_render,
-			i, len, a_connection,
-			result_from_recursion;
-		
-		//get the root element by its id
-		root_element = CSD.model.get_element_by_id_and_call_function(root_element_id);
-		
-		// generate the html for it
-		the_jquery_html_r = CSD.views.for_an_element_v2(root_element);//, connection_element_from_this_element_to_a_parent_element);
-		
-		// find if the current root_element has any connection elements connecting to it.
-		connections__to__root_element = root_element.connections__to__this_element(return_only_ids);
-		//find if any of these connection elements have been selected to be viewed.
-		connections__to__root_element = connections__to__root_element.match(CSD.views_data.to_display);
-		
-		len = connections__to__root_element.length;
-		for (i = 0; i < len; i += 1) {
-			//render each connection element
-		  	a_connection = CSD.model.get_element_by_id_and_call_function(connections__to__root_element[i]);
-		  	result_from_recursion = CSD.views.walker_function_v2(a_connection.id());
-			the_jquery_html_r.append(result_from_recursion);
-		};
-		
-		if ((root_element.element_type() === 'connection') && (CSD.views_data.to_display.contains(root_element.connects_from()) )) {
-			//the root_element is a connection and it connects from an element in 'CSD.views_data.to_display', so render the element it connects_from
-			CSD.model.get_element_by_id_and_call_function(root_element.connects_from());
-		}
-		
-		return the_jquery_html_r;
-	};
-	
-	
 /*	
-	CSD.views.walker_function = function (root_element_id, connection_element_from_this_element_to_a_parent_element, is_root, indent) {
-		is_root = is_root || false;
-		
-		//get the root element by its id
-		root_element = CSD.model.get_element_by_id_and_call_function(root_element_id);
-		
-		
-		// generate the html for it
-		var the_jquery_html_r = CSD.views.for_an_element(root_element, connection_element_from_this_element_to_a_parent_element, indent);
-		
-		//find the next root_element
-		connections__to__root_element = root_element.connection_elements_connecting__to__this_element(return_only_ids);
-//			// go through and remove all element ids that either have been rendered already or were not requested to be rendered.
-//			unrendered__connections_to_this_element = connections__to__root_element.match(copy_of_views_data);
-		//d/ alert('connections__to__root_element = ' + connections__to__root_element + ', CSD.views_data = ' + CSD.views_data + ' # in walker_function');
-		connections_to_this_element_to_render = connections__to__root_element.match(CSD.views_data);
-		
-		len = connections_to_this_element_to_render.length
-		for (i = 0; i < len; i += 1) {
-			a_connection = CSD.model.get_element_by_id_and_call_function(connections_to_this_element_to_render[i]);
-			//d/ alert('root_element_id = ' + root_element_id + ', indent = ' + indent + ' # in walker_function');
-			
-			if(!is_root){ indent += 1; }
-			
-			if(indent > limit_to_depth_of_levels){
-				console.log('depth of argument exceeds maximum of: ' + limit_to_depth_of_levels); 
-				return $('<div></div>').append('max depth of argument is currently: ' + limit_to_depth_of_levels);
-			}
-			
-			//set the element it refers to in its .content() as the new root element id
-			result_from_recursion = walker_function((a_connection.content()[0]), a_connection, false, indent) 
-			the_jquery_html_r.append(result_from_recursion);
-		};
-		
-		return the_jquery_html_r;
-	};
-*/	
-	
 	
 	CSD.views.for_an_element_v2 = function (the_element_to_display, connection_element_from_this_element_to_a_parent_element) {
 		var the_jquery_html;
@@ -143,45 +73,11 @@
 	};
 	
 	
-	/*
-	CSD.views.for_an_element = function (the_element_to_display, connection_element_from_this_element_to_a_parent_element, indent) { //, element_connections_with_the_element){
-		var indent = indent || 0,
-			the_jquery_html,
-			child_div_for_connection_to_parent = '',
-			child_div_for_element = '',
-			options_for_element = '',
-			child_div_for_options = '';
-		
-		if (connection_element_from_this_element_to_a_parent_element !== undefined) {
-			child_div_for_connection_to_parent = $('<div></div>').append(
-				(connection_element_from_this_element_to_a_parent_element.connects_to() + ' <- ' + connection_element_from_this_element_to_a_parent_element.connects_from()).toString()
-			 	).attr('id', 'element_' + connection_element_from_this_element_to_a_parent_element.id()).addClass('element'); 
-		}
-		
-		child_div_for_element = 
-			$('<div></div>')
-			.append(the_element_to_display.content().toString())
-			.attr('id', 'element_' + the_element_to_display.id())
-			.addClass('element'); 
-		 
-		options_for_element = CSD.views.options_for_element(the_element_to_display);
-		 
-		child_div_for_options = 
-			$('<div></div>')
-			.append(options_for_element)
-			.attr('id', 'element_' + the_element_to_display.id() + '_options')
-			.addClass('element');
-		 
-		the_jquery_html = 
-			$('<div></div>')
-			.append(child_div_for_connection_to_parent, child_div_for_element, child_div_for_options)
-			.attr('id', 'element_' + the_element_to_display.id() + '_wrapper');
-		
-		return the_jquery_html;
-	};
-	*/
-	
+*/
+
 	CSD.views.render_node_in_html = function (the_node, html_div_to_render_in) {
+		var a_debug = the_node.id();
+		
 		html_div_to_render_in.append(CSD.views.html_for_a_node(the_node));
 		
 		var connections_to_this_node = the_node.connections__to__this_element();
@@ -196,6 +92,8 @@
 	};
 	
 	CSD.views.html_for_a_node = function (the_node) {
+		var a_debug = the_node.id();
+		
 		var inner_div_html, outer_div_html;
 		
 		inner_div_html = $('<div></div>')
@@ -205,14 +103,28 @@
 		outer_div_html = $('<div></div>')
 						.append(inner_div_html)
 						.addClass('element_outer');
+		CSD.views.options_for_element(the_node, outer_div_html);
 		
 		return outer_div_html;
+	};
+	
+	
+	CSD.views.html_for_a_horizontal_node = function (the_horizontal_node, html_div_to_render_in) {
+		var a_debug = the_horizontal_node.id();
+		
+		var is_for_horizontal_node = true,
+			horizontal_element_group_html;
+		
+		horizontal_element_group_html = CSD.views.html_for_an_element_group(is_for_horizontal_node);
+		the_horizontal_node.render_in_html(horizontal_element_group_html);
+		html_div_to_render_in.append(horizontal_element_group_html);
 	};
 	
 	
 
 	
 	CSD.views.html_for_a_connection = function (the_connection, html_div_to_render_in, other_parameters) {
+		var a_debug = the_connection.id();
 		//connection is either:
 		// > known to connect to a node, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection'
 		// > known to connect to a vertical connection, so it will not have an 'array_of_remaining_sibling_vertical_connections' and will call 'html_for_a_horizontal_connection' (passing the_horizontal_node if it's available)
@@ -228,36 +140,38 @@
 
 	
 	CSD.views.html_for_a_vertical_connection = function (the_connection, html_div_to_render_in, other_parameters) {
+		var a_debug = the_connection.id();
+		
 		var array_of_remaining_sibling_vertical_connections = other_parameters.array_of_remaining_sibling_vertical_connections,
 			the_horizontal_node = other_parameters.the_horizontal_node;
 		
 		var symbol_container_html,
 			vertical_connection_html,
-			vertical_line_html,
-			symbol_html,
-			jquery_element_group,
+			element_group_html,
+			horizontal_element_group_html,
 			array_of_horizontal_connections,
 			i = 0, len,
 			id_of_next_potential_node,
 			next_node;
 		
-		symbol_container_html = CSD.views.html_for_a_connection_symbol_container();
-		vertical_connection_html = $('<div></div>').append(symbol_container_html).addClass('vertical_connection believed_true unanswered dispute');;
+		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection);
+		vertical_connection_html = $('<div></div>').append(symbol_container_html).addClass('vertical_connection believed_true unanswered dispute');
 		
 		
 		//check if there are any more sibling vertical connections to render
 		if (array_of_remaining_sibling_vertical_connections.length > 0) {
-			jquery_element_group = CSD.views.html_for_an_element_group();
-			array_of_remaining_sibling_vertical_connections.shift().render_in_html(jquery_element_group, {array_of_remaining_sibling_vertical_connections: array_of_remaining_sibling_vertical_connections, the_horizontal_node: the_horizontal_node})
-			vertical_connection_html.append(jquery_element_group);
+			element_group_html = CSD.views.html_for_an_element_group();
+			array_of_remaining_sibling_vertical_connections.shift().render_in_html(element_group_html, {array_of_remaining_sibling_vertical_connections: array_of_remaining_sibling_vertical_connections, the_horizontal_node: the_horizontal_node})
+			vertical_connection_html.append(element_group_html);
+
+		} else {
+			//check if there's the_horizontal_node to render
+			if (the_horizontal_node) {
+				CSD.views.html_for_a_horizontal_node(the_horizontal_node, vertical_connection_html);
+			}
 		}
 		html_div_to_render_in.append(vertical_connection_html);
-		
-		
-		//check if there's the_horizontal_node to render
-		if (the_horizontal_node) {
-			
-		}
+
 		
 		
 		//check if there are any connections that connect to this vertical connection element
@@ -272,14 +186,15 @@
 		//check if there are any nodes that this connection element connects from
 		id_of_next_potential_node = the_connection.connects_from();
 		if (CSD.views_data.to_display.contains(id_of_next_potential_node)) {
-			next_node = CSD.model.get_element_by_id_and_call_function(id_of_next_potential_node);
+			next_node = CSD.model.get_element_by_id(id_of_next_potential_node);
 			if (next_node) {
 				next_node.render_in_html(html_div_to_render_in);
 			} else {
 				console.log("error.  Requested element node of id = '" + id_of_next_potential_node + "' but it's not available.  #in CSD.views.html_for_a_vertical_connection");
 			}
 		}
-
+		
+		//return the most inner
 	};
 	
 	
@@ -287,6 +202,8 @@
 
 	
 	CSD.views.html_for_a_horizontal_connection = function (the_connection, html_div_to_render_in) {
+		var a_debug = the_connection.id();
+		
 		var the_horizontal_node_id = the_connection.connects_from(),
 			the_horizontal_node = undefined,
 			is_a_horizontal_connection_symbol = true,
@@ -296,13 +213,13 @@
 			vertical_element_group_html,
 			horizontal_element_group_html;
 		
-		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(is_a_horizontal_connection_symbol);
+		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection, is_a_horizontal_connection_symbol);
 		horizontal_connection_html = $('<div></div>').append(symbol_container_html).addClass('horizontal_connection believed_false unanswered dispute');
 		
 		
 		//find if the horizontal node is in the elements to display
 		if (CSD.views_data.to_display.contains(the_horizontal_node_id)) {
-			the_horizontal_node = CSD.model.get_element_by_id_and_call_function(the_horizontal_node_id);
+			the_horizontal_node = CSD.model.get_element_by_id(the_horizontal_node_id);
 		}
 		
 		//find which of the vertical connections to this horizontal connection is in the elements to display
@@ -314,15 +231,11 @@
 																											 		the_horizontal_node: the_horizontal_node});
 			horizontal_connection_html.append(vertical_element_group_html);
 		} else {
-			//get the horizontal element_group
-			var is_for_horizontal_node = true;
-			horizontal_element_group_html = CSD.views.html_for_an_element_group(is_for_horizontal_node);
-			//render the_horizontal_node if it exists
+			//check if there's the_horizontal_node to render
 			if (the_horizontal_node) {
-				the_horizontal_node.render_in_html(horizontal_element_group_html);
+				CSD.views.html_for_a_horizontal_node(the_horizontal_node, horizontal_connection_html);
 			}
-			horizontal_connection_html.append(horizontal_element_group_html);
-		};
+		}
 		
 		
 		
@@ -331,7 +244,9 @@
 	
 	
 	
-	CSD.views.html_for_a_connection_symbol_container = function (is_a_horizontal_connection_symbol) {
+	CSD.views.html_for_a_connection_symbol_container = function (the_connection, is_a_horizontal_connection_symbol) {
+		var a_debug = the_connection.id();
+		
 		is_a_horizontal_connection_symbol = is_a_horizontal_connection_symbol || false;
 		var symbol_html,
 			line_html,
@@ -346,7 +261,7 @@
 		
 		symbol_html = $('<div></div>').append(connection_symbol).addClass('supports symbol');
 		line_html = $('<div></div>').append(symbol_html).addClass(connection_direction + '_line');
-		symbol_container_html = $('<div></div>').append(line_html).addClass('symbol_container');
+		symbol_container_html = $('<div></div>').append(line_html).addClass('symbol_container').attr('id', the_connection.id());
 		
 		return symbol_container_html;
 	}
@@ -365,116 +280,91 @@
 	
 	
 	
-	CSD.views.options_for_element = function(the_element_to_display) {
-		var html_options = [],
+	CSD.views.options_for_element = function(the_element_to_display, html_to_render_in) {
+		var the_element_id = the_element_to_display.id(),
 			connection_elements_for_this_element = the_element_to_display.connection_elements(),
-			connection_elements_connecting_from_this_element = connection_elements_for_this_element.connection_elements_connecting_from_this_element,
-			connection_elements_connecting__to__this_element = connection_elements_for_this_element.connection_elements_connecting__to__this_element,
-			id_of_option_hide_div = '',
-			div_for_hide_element_option = '',
-			id_of_option__show_to_links__div = '',
-			div_for_show_to_element_option = '',
-			id_of_option__show_from_links__div = '',
-			div_for_show_from_element_option = '';
-			
+			connection_elements_connecting_from_this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections_from_this_element),
+			connection_elements_connecting__to__this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections__to__this_element),
+			options_div_html,
+			div_for_hide_element_option,
+			div_for_show_to_element_option = $('<div></div>').attr('id', the_element_id).addClass('show_to, option'),
+			div_for_show_from_element_option = $('<div></div>').attr('id', the_element_id).addClass('show_from, option');
+		
+		options_div_html = $('<div></div>').addClass('element_options');	
 
-		id_of_option_hide_div = 'option_hide_element_' + the_element_to_display.id();
-		div_for_hide_element_option = $('<div></div>').append('hide'
-			).attr('id', id_of_option_hide_div).addClass('element_option');
+		div_for_hide_element_option = $('<div></div>').append('hide')
+													  .attr('id', the_element_id)
+													  .addClass('hide_element, option');
 		
 		if (connection_elements_connecting_from_this_element.length < 1) {
-			div_for_show_to_element_option = $('<div></div>').append('links to none');			
+			div_for_show_to_element_option.css('display', 'none');
 		} else {
-			if (connection_elements_connecting_from_this_element.length === 1) {
-				//give short cut ids for just the connection element and the element it connects to
-				id_of_option__show_to_links__div = 'option__show_elements_' + connection_elements_connecting_from_this_element[0].connects_to() + '_' + connection_elements_connecting_from_this_element[0].id();
-			} else {
-				alert(' need to implement selector box for when an element like this has multiple lements it links to');
-				id_of_option__show_to_links__div = 'option__show_links_from_element_' + the_element_to_display.id();
-			}
-			div_for_show_to_element_option = 
-				$('<div></div>').append('links to ' + AJP.utilities.pluralize(connection_elements_connecting_from_this_element.length, 'other'))
-				.attr('id', id_of_option__show_to_links__div).addClass('element_option');
+			console.log(' need to implement selector box for when an element like this has multiple elements it links to  #in CSD.views.options_for_element');
+			div_for_show_to_element_option.append('to ' + connection_elements_connecting_from_this_element.length);
 		}
+		if (connection_elements_connecting__to__this_element.length < 1) {
+			div_for_show_from_element_option.css('display', 'none');
+		} else {
+			div_for_show_from_element_option.append('from ' + connection_elements_connecting__to__this_element.length);
+		}	
 		
+		options_div_html.append(div_for_hide_element_option)
+						.append(div_for_show_to_element_option)
+						.append(div_for_show_from_element_option);
+		html_to_render_in.append(options_div_html);
 		
-			
-		id_of_option__show_from_links__div = 'option__show_links_to_element_' + the_element_to_display.id();
-		div_for_show_from_element_option = $('<div></div>').append('linked to from ' + AJP.utilities.pluralize(connection_elements_connecting__to__this_element.length, 'other')
-			).attr('id', id_of_option__show_from_links__div).addClass('element_option');
-		
-		html_options = html_options.concat(div_for_hide_element_option[0]);
-		html_options = html_options.concat(div_for_show_to_element_option[0]);
-		html_options = html_options.concat(div_for_show_from_element_option[0]);
-		
-		
-		return html_options;
+		//html_options = html_options.concat(div_for_hide_element_option[0]);
+		//html_options = html_options.concat(div_for_show_to_element_option[0]);
+		//html_options = html_options.concat(div_for_show_from_element_option[0]);
+		//return html_options;
 	};
 	
 	
 	
-
+	// add onClick handlers
 	CSD.views.add_onclick_handlers = function () {
-		// add onClick handlers
-		$('.element_option').click(function() {
-  			//d/ alert('Handler for .click() called on ' + this.id);
-  			//d/ alert(AJP.utilities.hello());
-  			var clicked_html_id = this.id, 
-  				html_id_to_test_for = /this_has_not_been_defined_yet/, 
-  				element_id,
-  				element_ids = [],
-  				id_of_element_to_get,
-  				element_to_display;
-  				 
-  			
-  			//  option__show_to_links_for_element_
-  			html_id_to_test_for = /option__show_elements_/;
-  			if (html_id_to_test_for.test(clicked_html_id)){
-  				element_ids = clicked_html_id.replace(html_id_to_test_for, "");
-  				element_ids = element_ids.split('_');
-  				//d/ var a_connection_element_to_this_element = CSD.data.element_by_id[element_id].connection_elements().connection_elements_connecting_from_this_element[0]; //@TODO  replace [0] with iteration
-  				//d/ id_of_element_to_get = a_connection_element_to_this_element.content().split(',')[1];  //  [1] pulls out the second value from the content field,
-  																									  //  which is the id of the element connecting from this element.
-  						CSD.views_manager.add_element([parseInt(element_ids[0]), parseInt(element_ids[1])]);
-  						CSD.views.show_view();
-  			}
-
-
-  			//  option__show_from_links_for_element_
-  			html_id_to_test_for = /option__show_links_to_element_/;
-  			if (html_id_to_test_for.test(clicked_html_id)){
-  				element_id = clicked_html_id.replace(html_id_to_test_for, "");
-  				var a_connection_element_from_this_element = CSD.data.element_by_id[element_id].connection_elements().connection_elements_connecting__to__this_element[0];  //@TODO  replace [0] with iteration
-  				
-  				id_of_element_to_get = a_connection_element_from_this_element.content().split(',')[0];  //  [0] pulls out the first value from the content field, 
-  																										//  which is the id of the element connecting to this element.
-  				$.getJSON("http://localhost:3000/elements/" + id_of_element_to_get + ".js", function(data) {
-					var items = [];
-				
-					$.each(data, function(key, val) {
-						items.push('<li id="' + key + '">' + val + '</li>');
-					});
-					
-					$('<ul/>', {
-						'class': 'my-new-list',
-						html: items.join('')
-					}).appendTo('body');
-				});
-  			} 
-  			
-		});
-	};
-	
-	
-	CSD.views.for_displaying_element = function(an_element, element_iel_link_to_parent, indentation) {
+	    $('.element_inner, .symbol_container').click(function (e, ui) {
+	    	e.stopPropagation();
+	    	//alert('You clicked the element of id: ' + e.target.id + '  and class = ' + $(this).attr('class'));
+	    	var //element_id = e.target.id,
+	    		element_id = this.id,
+	    		the_element = CSD.model.get_element_by_id(element_id),
+	    		ids_of_more_elements_to_show_in_view = [],
+	    		ids_of_linked_elements,
+	    		linked_connection_elements,
+	    		a_connection,
+	    		i = 0, len;
+	    	
+	    	//get the linked elements and add them to the view of elements to display.
+	    	//for (var i = CSD.views_manager.degrees_of_view; i > 0; i -= 1){
+			//	ids_of_linked_elements = the_element.ids_of_linked_elements();
+			//};
+	    	ids_of_linked_elements = the_element.ids_of_linked_elements();
+	    	ids_of_more_elements_to_show_in_view = ids_of_more_elements_to_show_in_view.concat(ids_of_linked_elements);
+	    	
+	    	linked_connection_elements = the_element.connection_elements();
+	    	//for each of the connection elements that connects from this element, get the connects_to element id and add this to the list of ids to show in the view
+	    	len = linked_connection_elements.connections_from_this_element.length
+	    	for (i=0; i < len; i += 1) {
+				a_connection = linked_connection_elements.connections_from_this_element[i];
+				ids_of_more_elements_to_show_in_view.push(a_connection.connects_to());
+			};
+			//for each of the connection elements that connects to this element, get the connects_from element id and add this to the list of ids to show in the view
+	    	len = linked_connection_elements.connections__to__this_element.length
+	    	for (i=0; i < len; i += 1) {
+				a_connection = linked_connection_elements.connections__to__this_element[i];
+				ids_of_more_elements_to_show_in_view.push(a_connection.connects_from());
+			};
+	    	
+	    	
+	    	CSD.views_manager.add_element(ids_of_more_elements_to_show_in_view);
+	    	CSD.views.show_view();
+	    });
 		
 	};
 	
+
 	
-//	CSD.views.add_element_to_view = function(an_element) {
-//		CSD.views_manager.add_element(an_element);
-//		CSD.views.show_view();
-//	}
 
 
 //############################### 
@@ -502,7 +392,7 @@
 		// loop through all element_ids in 'array_of_element_ids'
 		for (i=0; i < len; i += 1) {
 			// for each id, recover it's corresponding element
-			an_element = CSD.model.get_element_by_id_and_call_function(array_of_element_ids[i]);
+			an_element = CSD.model.get_element_by_id(array_of_element_ids[i]);
 			// if it doesn't exist yet, then log and error.... as it should.
 			if (an_element === undefined) {
 				console.log('Requested element id of ' + array_of_element_ids[i] + ' does not exist locally so will be ignored from finding the root element for displaying the view.  # in CSD.views_helper.find_root_element_id_to_display');
@@ -599,9 +489,8 @@
 		};
 		
 		//check all elements have been obtained and are available locally.
-		//return CSD.model.ensure_array_of_elements_are_available(ids_of_elements_to_add);
+		//return CSD.model.identify_unavailable_elements(ids_of_elements_to_add);
 	};
-
 
 
 	CSD.views_manager.remove_element = function (element_to_remove) { 		
@@ -609,7 +498,7 @@
 	};
 	
 	
-	// find all elements in this array of discussion elements that are marked as being displayed.
+	// find all elements in this array of discussion elements that are marked as being in the view.
 	CSD.views_manager.return_elements_in_view = function (an_array_of_discussion_elements) {
 		function element_in_view (element, index, array) {
 			// element = a discussion element in the 'connections_to_this_node' array
@@ -617,6 +506,18 @@
 		}
 		return an_array_of_discussion_elements.filter(element_in_view);
 	}
+	
+	// find all elements in this array of discussion elements that are marked as NOT being in the view.
+	CSD.views_manager.return_elements_NOT_in_view = function (an_array_of_discussion_elements) {
+		function element_in_view (element, index, array) {
+			return (!(CSD.views_data.to_display.contains(element.id())));
+		}
+		return an_array_of_discussion_elements.filter(element_in_view);
+	}
+	
+	
+	CSD.views_manager.degrees_of_view = 2;
+	CSD.views_manager.max_degrees_of_view = 6;
 
 //});
 

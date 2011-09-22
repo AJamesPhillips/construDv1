@@ -38,34 +38,16 @@
 	
 	CSD.data_manager.set_up_data_structure();
 	
-		
+	
+	
+	// array_of_elements_ids_to_get  will be in the form of N-n,N-n,N-n Where N is the id of 
+	//  the element to get and 'n' is the degrees of view around that element.
 	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available) {  //, degrees_of_neighbours) {
-		
-//		if (AJP.u.is_array(id_of_element_to_get)) {
-//			//implement AJAX for multiple element request
-//			$.getJSON("http://localhost:3000/elements/" + id_of_element_to_get + ".json", function(data) {
-//				var the_element = undefined;
-//				CSD.data_manager.add_data(data);
-//				alert('I am ready noiw!');
-//				
-//				the_element = CSD.data.element_by_id[id_of_element_to_get];
-//				
-//				if (the_element === undefined) {
-//					console.log('invalid request\n  element id of ' + id_of_element_to_get + ' does not exist.  # in CSD.model.get_element_by_id_and_call_function');
-//					throw {
-//						name: 'invalid request',
-//						message: 'element id of ' + id_of_element_to_get + 'does not exist'
-//					};
-//				} else if (function_to_call_once_data_is_available !== undefined) {
-//					function_to_call_once_data_is_available();
-//				};
-//			});
-//		}
-		
 		// implement AJAX for single element request
 		if (array_of_elements_ids_to_get.length !== 0) {
 			$.getJSON("http://localhost:3000/elements/" + array_of_elements_ids_to_get + ".json", function(data) {
-				var an_element = undefined,
+				var an_element_id,
+					an_element = undefined,
 					i = 0,
 					len = array_of_elements_ids_to_get.length,
 					all_elements_are_now_present = true;
@@ -73,12 +55,16 @@
 				CSD.data_manager.add_data(data);
 				//d/ alert('I am ready noiw! and array_of_elements_ids_to_get is_array = ' + (AJP.u.is_array(array_of_elements_ids_to_get)) + ' typeof = ' + (typeof array_of_elements_ids_to_get));
 				
+				
+				
 				// check each element is now available
 				for (i = 0; i < len; i += 1) {
-					an_element = CSD.data.element_by_id[array_of_elements_ids_to_get[i]];
+					an_element_id = array_of_elements_ids_to_get[i];
+					an_element_id = an_element_id.split('-')[0];  //because some id's will be in the form of 23(4) where the 4 is the number of degrees of connections to obtain.
+					an_element = CSD.data.element_by_id[an_element_id];
 					if (an_element === undefined) {
 						all_elements_are_now_present = false;
-						console.log('invalid request\n  element id of ' + array_of_elements_ids_to_get + ' does not exist.  # in CSD.data_manager.get_data_by_ajax');
+						console.log('invalid request\n  element id of ' + array_of_elements_ids_to_get[i] + ' does not exist.  # in CSD.data_manager.get_data_by_ajax');
 						//throw {
 						//	name: 'invalid request',
 						//	message: 'element id of ' + array_of_elements_ids_to_get + 'does not exist'
@@ -86,8 +72,8 @@
 					}
 				}
 				
-				if (all_elements_are_now_present && (function_to_call_once_data_is_available !== undefined)) {
-					function_to_call_once_data_is_available();
+				if (all_elements_are_now_present) {
+					CSD.helper.call_provided_function(function_to_call_once_data_is_available);
 				}
 			});
 		} else {
@@ -115,7 +101,7 @@
 	CSD.data_manager.add_new_elements_from_data = function (new_elements) {
 		var i = 0, len = new_elements.length, num_of_elements_added = 0;
 		
-		for (i = 0; i < len; i++){
+		for (i = 0; i < len; i += 1){
 			var the_potential_new_element = CSD.model.element(new_elements[i]);
 			var id_of_the_potential_new_element = the_potential_new_element.id();
 			if (!CSD.data.element_by_id[id_of_the_potential_new_element]) {
@@ -130,7 +116,7 @@
 	CSD.data_manager.add_new_iel_links_from_data = function (new_iel_links) {
 		var i = 0, len = new_iel_links.length, num_of_iel_links_added = 0;
 
-		for (i = 0; i < len; i++){
+		for (i = 0; i < len; i +=1){
 			var new_iel_link_object = CSD.model.inter_element_link(new_iel_links[i]);
 			if ( CSD.data_manager.add_an_inter_element_link( new_iel_link_object ) ) { 
 				num_of_iel_links_added += 1; // CSD.data_manager.add_an_inter_element_link() returns true if it's added a new link, therefore, increase size by 1.

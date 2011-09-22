@@ -37,7 +37,7 @@ class Element < ActiveRecord::Base
   
   def self.search(search)
     if search
-      statements_and_references.find(:all, :conditions => ['content LIKE ?', "%#{search}%"])
+      statements_and_references.find(:all, :conditions => ['LOWER(content) LIKE ?', "%#{search.downcase}%"])
     else
       []
     end

@@ -102,16 +102,17 @@
 		//produce element_type specific code for rendering it in html.
 		if (specification.element_type === 'node') {
 			render_in_html = function (html_div_to_render_in) {
+				var a_debug = the_new_element.id();
 				CSD.views.render_node_in_html(the_new_element, html_div_to_render_in);
 			};
 		} else if (specification.element_type === 'connection') {
-			
 			//connection is either:
 			// > known to connect to a node, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection'
 			// > known to connect to a vertical connection, so it will not have an 'array_of_remaining_sibling_vertical_connections' and will call 'html_for_a_horizontal_connection'
 			// > known to connect to a horizontal connection, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection' with out without a corresponding 'a_horizontal_element'
 			// > is not know to connect to either node, or horizontal or vertical connection to so will be called with an empty array for 'array_of_remaining_sibling_vertical_connections' and will render as a vertical connection.
 			render_in_html = function (html_div_to_render_in, other_parameters) { //array_of_remaining_sibling_vertical_connections, a_horizontal_element
+				var a_debug = the_new_element.id();
 				other_parameters = other_parameters || {};
 				CSD.views.html_for_a_connection(the_new_element, html_div_to_render_in, other_parameters);
 			};
@@ -184,7 +185,7 @@
 			return specification.created_at;
 		},
 		elements = function () {
-			return [CSD.model.get_element_by_id_and_call_function(element1_id()), CSD.model.get_element_by_id_and_call_function(element2_id())];
+			return [CSD.model.get_element_by_id(element1_id()), CSD.model.get_element_by_id(element2_id())];
 		};
 		
 		//any private_states from higher up the inheritance chain
@@ -230,28 +231,29 @@
 		
 		for(i = 0; i < len; i += 1) {
 			id_of_element_linked_with_the_element = ids_of_elements_linked_with_the_element[i];
-			element_linked_with_the_element = CSD.data.element_by_id[id_of_element_linked_with_the_element];
-			
-			if (element_linked_with_the_element.element_type() === 'connection') {
-				linked_element_subtype = element_linked_with_the_element.subtype();
-				//if ((linked_element_subtype === 'supports') || (linked_element_subtype === 'refutes') || (linked_element_subtype === 'questions')) {
-					if (element_linked_with_the_element.connects_from() === id_of_central_element) {
-						if (return_only_ids) {
-							resulting_connections.connections_from_this_element.push(id_of_element_linked_with_the_element);
-						} else {
-							resulting_connections.connections_from_this_element.push(element_linked_with_the_element);
+
+			try {
+				element_linked_with_the_element = CSD.model.get_element_by_id(id_of_element_linked_with_the_element);
+				if (element_linked_with_the_element.element_type() === 'connection') {
+					linked_element_subtype = element_linked_with_the_element.subtype();
+					//if ((linked_element_subtype === 'supports') || (linked_element_subtype === 'refutes') || (linked_element_subtype === 'questions')) {
+						if (element_linked_with_the_element.connects_from() === id_of_central_element) {
+							if (return_only_ids) {
+								resulting_connections.connections_from_this_element.push(id_of_element_linked_with_the_element);
+							} else {
+								resulting_connections.connections_from_this_element.push(element_linked_with_the_element);
+							}
 						}
-					}
-					if (element_linked_with_the_element.connects_to() === id_of_central_element) {
-						if (return_only_ids) {
-							resulting_connections.connections__to__this_element.push(id_of_element_linked_with_the_element);
-						} else {
-							resulting_connections.connections__to__this_element.push(element_linked_with_the_element);
+						if (element_linked_with_the_element.connects_to() === id_of_central_element) {
+							if (return_only_ids) {
+								resulting_connections.connections__to__this_element.push(id_of_element_linked_with_the_element);
+							} else {
+								resulting_connections.connections__to__this_element.push(element_linked_with_the_element);
+							}
 						}
-					}
-				//} else {
-				//	console.log("unsupported element subtype = '" + element_linked_with_the_element.subtype() + "'  # in 'CSD.model.connection_elements_for_an_element'");
-				//}
+				}	
+			} catch (e) {
+				console.log("Element of id: '" + id_of_element_linked_with_the_element + "' has not been requested from mothership so is unavailable for the CSD.model.connection_elements_for_an_element function to look at   # in 'CSD.model.connection_elements_for_an_element'");
 			}
 		} // finish for loop
 		
@@ -260,10 +262,15 @@
 	
 	
 	
-	CSD.model.get_element_by_id_and_call_function = function (id_of_element_to_get, function_to_call_once_data_is_available) {
+	
+	CSD.model.get_element_by_id = function (id_of_element_to_get) {
 		var the_element = CSD.data.element_by_id[id_of_element_to_get];
+			
 		if (the_element === undefined) {
-			CSD.data_manager.get_data_by_ajax([id_of_element_to_get], function_to_call_once_data_is_available);
+			throw {
+				name: 'element data unavailable',
+				message: "element of id: '" + id_of_element_to_get + "' was requested but was not available locally #in CSD.model.get_element_by_id "
+			};
 		}
 
 		return the_element;
@@ -271,38 +278,55 @@
 	
 	
 	
-	CSD.model.get_array_of_elements_by_id_using_AJAX_and_then_call_function = function (array_of_element_ids_to_get, function_to_call_once_data_is_available) {
-		CSD.data_manager.get_data_by_ajax(array_of_element_ids_to_get, function_to_call_once_data_is_available);
-	};
+	//CSD.model.ensure_element_is_available_and_then_call_function = function (id_of_element_to_get, function_to_call_once_data_is_available) {
+	//	var degrees_of_view = 0;
+	//	CSD.model.ensure_array_of_elements_are_available_and_then_call_function([id_of_element_to_get], function_to_call_once_data_is_available, degrees_of_view);
+	//};
 	
-	CSD.model.ensure_array_of_elements_are_available_and_then_call_function = function (array_of_element_ids_to_get, function_to_call_once_data_is_available) {
+
+	
+	//CSD.model.get_array_of_elements_by_id_using_AJAX_and_then_call_function = function (array_of_element_ids_to_get, function_to_call_once_data_is_available) {
+	//	CSD.data_manager.get_data_by_ajax(array_of_element_ids_to_get, function_to_call_once_data_is_available);
+	//};
+	
+	CSD.model.ensure_array_of_elements_are_available_and_then_call_function = function (array_of_element_ids_to_get, function_to_call_once_data_is_available, degrees_of_view) {
 		var array_of_missing_element_ids = [];
 		
 		// iterate over array_of_element_ids_to_get, getting each using  CSD.data.element_by_id[ an_id ];
 		//	if it returns undefined, then add it to the list of ids to get from data_manager	
-		array_of_missing_element_ids = CSD.model.ensure_array_of_elements_are_available(array_of_element_ids_to_get);
+		array_of_missing_element_ids = CSD.model.identify_unavailable_elements(array_of_element_ids_to_get, degrees_of_view);
 		
 		if (array_of_missing_element_ids.length !== 0) {
 			CSD.data_manager.get_data_by_ajax(array_of_missing_element_ids, function_to_call_once_data_is_available);
 		} else {
-			function_to_call_once_data_is_available();
+			CSD.helper.call_provided_function(function_to_call_once_data_is_available);
 		}
 	};
 	
 	
-	CSD.model.ensure_array_of_elements_are_available = function (array_of_element_ids_to_get) {
+	CSD.model.identify_unavailable_elements = function (array_of_element_ids_to_get, degrees_of_view) {
 		//returns an array of element_ids that are in the array_of_element_ids_to_get but that are not present in the list of elements.
+		if (degrees_of_view === undefined) {
+			degrees_of_view = CSD.views_manager.degrees_of_view;
+		}
+		if (degrees_of_view > CSD.views_manager.max_degrees_of_view) {
+			degrees_of_view = CSD.views_manager.max_degrees_of_view;
+		}
 		var array_of_missing_element_ids = [],
 			i = 0, len = array_of_element_ids_to_get.length, an_element_id = undefined,
-			an_element = undefined;
+			an_element = undefined,
+			missing_linked_element_ids;
 		
 		for (i = 0; i < len; i += 1) {
 			an_element_id = array_of_element_ids_to_get[i];
 			an_element = CSD.data.element_by_id[an_element_id];
 			if (an_element === undefined) {
-				array_of_missing_element_ids.push(an_element_id);
+				array_of_missing_element_ids.push(an_element_id + '-' + degrees_of_view);
+			} else if (degrees_of_view > 0) {
+				missing_linked_element_ids = CSD.model.identify_unavailable_elements(an_element.ids_of_linked_elements(), (degrees_of_view-1));
+				array_of_missing_element_ids = array_of_missing_element_ids.concat(missing_linked_element_ids);
 			}
-		};
+		}
 		
 		return array_of_missing_element_ids;
 	};
