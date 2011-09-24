@@ -53,7 +53,7 @@ class User < ActiveRecord::Base
                        :confirmation => true,
                        :length => {:within => 6..40}
   
-  validate :ensure_secret_code_is_correct
+  validate :ensure_secret_code_is_correct, :on => :create
   before_save :encryptPassword
   
  
@@ -133,7 +133,7 @@ class User < ActiveRecord::Base
     #logger.debug " secret_code = #{secret_code}  # in 'ensure_secret_code_is_correct' of 'user.rb' "
     #logger.debug " Digest::SHA2.hexdigest(secret_code) = #{Digest::SHA2.hexdigest(secret_code)}  # in 'ensure_secret_code_is_correct' of 'user.rb' "
     #logger.debug " the_secret_code = #{the_secret_code}  # in 'ensure_secret_code_is_correct' of 'user.rb' "
-    if secret_code.empty? || secret_code.nil? 
+    if secret_code.nil? || secret_code.empty? 
       errors.add(:secret_code, "for #{description_of_use_for_secret_code} can't be blank.")
     else
       errors.add(:secret_code, " is incorrect for #{description_of_use_for_secret_code}.")  unless Digest::SHA2.hexdigest(secret_code) == the_secret_code

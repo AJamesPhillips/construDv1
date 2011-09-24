@@ -2,13 +2,7 @@ You search for "<%= params[:search] %>" returned <%= pluralize @elements.count, 
 <br /> <br /> 
 
 <% if @elements.empty? && signed_in? %>
-	Create New discussion Statement:
-	<%= form_for @element do |f| %>
-		<%= f.text_field :content, :placeholder => 'statement' %>
-		<%= f.hidden_field :element_type, :value => 'node' %>
-		<%= f.hidden_field :subtype, :value => 'statement' %>
-		<%= f.submit 'create' %>
-	<% end %>
+	<%= render 'elements/different_element_fields' %>
 <% elsif @elements.empty? && !signed_in? %>
 	Sign in to create a new discussion.
 <% else %>

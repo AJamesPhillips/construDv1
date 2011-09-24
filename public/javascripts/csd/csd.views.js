@@ -11,6 +11,7 @@
 	//   render argument elements in html using divs and jQuery
 	CSD.views.show_view = function () {
 		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.render_html, CSD.views_manager.degrees_of_view);
+		
 	};
 	
 	CSD.views.render_html = function () {
@@ -44,7 +45,7 @@
 		
 		root_element.render_in_html(the_jquery_html, other_parameters);
 		the_jquery_html.append($('<div></div>').addClass('divClear'));
-		CSD.views.add_onclick_handlers();
+		CSD.routes.refresh();
 	};
 	
 /*	
@@ -94,7 +95,8 @@
 	CSD.views.html_for_a_node = function (the_node) {
 		var a_debug = the_node.id();
 		
-		var inner_div_html, outer_div_html;
+		var inner_div_html;
+		var outer_div_html;
 		
 		inner_div_html = $('<div></div>')
 						.append(the_node.content())
@@ -321,47 +323,7 @@
 	
 	
 	
-	// add onClick handlers
-	CSD.views.add_onclick_handlers = function () {
-	    $('.element_inner, .symbol_container').click(function (e, ui) {
-	    	e.stopPropagation();
-	    	//alert('You clicked the element of id: ' + e.target.id + '  and class = ' + $(this).attr('class'));
-	    	var //element_id = e.target.id,
-	    		element_id = this.id,
-	    		the_element = CSD.model.get_element_by_id(element_id),
-	    		ids_of_more_elements_to_show_in_view = [],
-	    		ids_of_linked_elements,
-	    		linked_connection_elements,
-	    		a_connection,
-	    		i = 0, len;
-	    	
-	    	//get the linked elements and add them to the view of elements to display.
-	    	//for (var i = CSD.views_manager.degrees_of_view; i > 0; i -= 1){
-			//	ids_of_linked_elements = the_element.ids_of_linked_elements();
-			//};
-	    	ids_of_linked_elements = the_element.ids_of_linked_elements();
-	    	ids_of_more_elements_to_show_in_view = ids_of_more_elements_to_show_in_view.concat(ids_of_linked_elements);
-	    	
-	    	linked_connection_elements = the_element.connection_elements();
-	    	//for each of the connection elements that connects from this element, get the connects_to element id and add this to the list of ids to show in the view
-	    	len = linked_connection_elements.connections_from_this_element.length
-	    	for (i=0; i < len; i += 1) {
-				a_connection = linked_connection_elements.connections_from_this_element[i];
-				ids_of_more_elements_to_show_in_view.push(a_connection.connects_to());
-			};
-			//for each of the connection elements that connects to this element, get the connects_from element id and add this to the list of ids to show in the view
-	    	len = linked_connection_elements.connections__to__this_element.length
-	    	for (i=0; i < len; i += 1) {
-				a_connection = linked_connection_elements.connections__to__this_element[i];
-				ids_of_more_elements_to_show_in_view.push(a_connection.connects_from());
-			};
-	    	
-	    	
-	    	CSD.views_manager.add_element(ids_of_more_elements_to_show_in_view);
-	    	CSD.views.show_view();
-	    });
-		
-	};
+	
 	
 
 	
@@ -449,31 +411,37 @@
 //		}
 //	};
 	
-	CSD.views_manager.add_element = function (ids_of_elements_to_add) {  //   ids_of_elements_to_add can be an element object or the id of an element as string or number, or an array of element ids.
+	
+	//  ids_of_elements_to_add can be:
+	//		an array of element ids
+	//		or an object where the keys are the element ids and the values are the degrees of view
+	CSD.views_manager.add_element = function (ids_of_elements_to_add) {  
 		var id_of_element_to_add = undefined,
 			index_of_element_id = undefined;
 
 		// ensure ids_of_elements_to_add is valid
-		if (!AJP.u.is_array(ids_of_elements_to_add)) {
-			if (typeof ids_of_elements_to_add === 'number') {
-				id_of_element_to_add = ids_of_elements_to_add;
-			} else if (typeof ids_of_elements_to_add === 'string') {
-				id_of_element_to_add = parseInt(ids_of_elements_to_add);
-				if (isNaN(id_of_element_to_add)) {
-					console.log('a string of value: ' + ids_of_elements_to_add + ' has been fed to CSD.views_manager.add_element but does not evaluate to give a valid element id');
-					throw {
-						name: 'invalid string for CSD.views_manager.add_element',
-						message: 'a string of value: ' + ids_of_elements_to_add + ' has been fed to CSD.views_manager.add_element but does not evaluate to give a valid element id\n' + 
-									'please send a valid number containing string, valid number or an element object'
-					};
-				}
-			} else {
-				id_of_element_to_add = ids_of_elements_to_add.id();
-			}
-			ids_of_elements_to_add = [id_of_element_to_add];
-		} else {
-			ids_of_elements_to_add;
-		}
+		//if (!AJP.u.is_array(ids_of_elements_to_add)) {
+		//	if (typeof ids_of_elements_to_add === 'number') {
+		//		id_of_element_to_add = ids_of_elements_to_add;
+		//	} else if (typeof ids_of_elements_to_add === 'string') {
+		//		
+		//		
+		//		id_of_element_to_add = parseInt(ids_of_elements_to_add);
+		//		if (isNaN(id_of_element_to_add)) {
+		//			console.log('a string of value: ' + ids_of_elements_to_add + ' has been fed to CSD.views_manager.add_element but does not evaluate to give a valid element id');
+		//			throw {
+		//				name: 'invalid string for CSD.views_manager.add_element',
+		//				message: 'a string of value: ' + ids_of_elements_to_add + ' has been fed to CSD.views_manager.add_element but does not evaluate to give a valid element id\n' + 
+		//							'please send a valid number containing string, valid number or an element object'
+		//			};
+		//		}
+		//	//} else {
+		//	//	id_of_element_to_add = ids_of_elements_to_add.id();
+		//	//}
+		//	ids_of_elements_to_add = [id_of_element_to_add];
+		//} else {
+		//	ids_of_elements_to_add;
+		//}
 		
 		
 		for (var i=0; i < ids_of_elements_to_add.length; i += 1) {

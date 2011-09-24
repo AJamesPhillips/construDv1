@@ -55,24 +55,27 @@ class UsersController < ApplicationController
   end
   
   
-  def edit   
+  def edit
     @title = "Editing #{@user.name}"
   end
   
   
   def update    
     if @user.hasSamePassword?(params[:old_password])
-      if @user.update_attributes(params[:user])      
+      ##if the user just wants to change their user name or email, they won't enter the password so, set this to the 'old_password' value and just reassign in. 
+      params[:user][:password] = params[:user][:password_confirmation] = params[:old_password]  if params[:password].nil?
+
+      if @user.update_attributes(params[:user])
         flash[:success] = "Profile updated."      
         redirect_to @user    
-      else      
-        @title = "Edit user"      
-        render 'edit'    
+      else
+        @title = "Edit user"
+        render 'edit'
       end
     else
       flash[:error] = "Enter current correct password into 'Old Password' field"
-      @title = "Edit user"      
-      render 'edit'    
+      @title = "Edit user"
+      render 'edit'
     end
       
   end
@@ -97,6 +100,7 @@ class UsersController < ApplicationController
   private    
     def correct_user
       @user = User.find(params[:id])   
+      logger.debug ">>> current_user?(@user) = #{current_user?(@user)}, @user = #{@user}, params = #{params}  #in correct_user of users_controller"
       redirect_to(root_path) unless current_user?(@user)
     end
     
@@ -110,7 +114,10 @@ class UsersController < ApplicationController
     
     
     def a_signed_in_user
-      redirect_to(root_path) if signed_in?
+      if signed_in?
+        flash[:error] = "You're already signed in.  Please sign out first."
+        redirect_to(root_path)
+      end
     end
 
   

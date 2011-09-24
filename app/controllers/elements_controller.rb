@@ -67,8 +67,11 @@ class ElementsController < ApplicationController
   
   
   def show
-    ## @TODO Bags of room for optimising this... I hope.  I think this needs to have more SELECT IN  SQL queries, though see how it's currently being implemented... I suspect it will be as many separate SELECT queries.
+    ## @TODO SO BAD.. Absolutely Bags of room here for optimising this...(I hope).  I think this needs to have more SELECT IN  SQL queries, though see how it's currently being implemented... I suspect it will be as many separate SELECT queries.
     ## @TODO check for security holes, what if someone puts something crazy as an element id, it will be taken as a strong and converted into a symbol that's latter used to find elements_by_id
+    
+    #d# 
+    logger.debug ">>>  params = #{params}  # in show of elements_controller"
     
     @element_ids = {}
     
@@ -79,7 +82,7 @@ class ElementsController < ApplicationController
     
     array_of_ids_and_their_degrees_of_view.each {|element_id_and_degree|
       element_id_and_degree = element_id_and_degree.split('-')
-      element_id = element_id_and_degree[0].to_sym
+      element_id = element_id_and_degree[0].to_i.to_s.to_sym  ##added the .to_i to filter any crap coming in that's not an integer
       element_id_and_degree[1] ||= 0
       element_degree = element_id_and_degree[1].to_i
       
@@ -95,6 +98,9 @@ class ElementsController < ApplicationController
       @element_ids[element_id] = 0 if @element_ids[element_id] < 0
     }
     
+    #d# 
+    logger.debug ">>>  @element_ids = #{@element_ids}  # in show of elements_controller"
+    
     ##now go through each element_id (the keys) of @element_ids and loop over, collecting their iel_linked elements
     @elements = []
     @element_links = []
@@ -103,28 +109,40 @@ class ElementsController < ApplicationController
       elements = [Element.find(element_id)]
       inter_element_links = elements[0].inter_element_links
       
+      
+      
       element_degree.times {
-        inter_element_links_before = inter_element_links
-        elements_before = elements
-        inter_element_links.each {|link| elements.concat link.elements } #unless inter_element_links.empty
+        inter_element_links.each {|link| elements.concat(link.elements) } #unless inter_element_links.empty
         elements.uniq!
-        elements.each {|element| inter_element_links.concat element.inter_element_links } #unless elements.empty?
-        inter_element_links.uniq!
-        break if ((inter_element_links_before == inter_element_links) && (elements_before == elements))   ## saves time when element_degree is large but element(s) aren't connected to enough so it's not going anywhere.
+        elements.each {|element| inter_element_links.concat(element.inter_element_links) } #unless elements.empty?
+        break if (inter_element_links.uniq!.nil?)   ## saves time when element_degree is large but element(s) aren't connected to enough so it's not going anywhere.
       }
+      
+      logger.debug ">>>  elements = #{elements.map {|element| element.id }}  # in show of elements_controller"
+      logger.debug ">>>  @elements = #{@elements.map {|element| element.id }}  # in show of elements_controller"
+      logger.debug ">>>  inter_element_links = #{inter_element_links.map {|iel_link| "#{iel_link.element1_id} #{iel_link.element2_id}"}}  # in show of elements_controller"
+      logger.debug ">>>  @element_links = #{@element_links.map {|iel_link| "#{iel_link.element1_id} #{iel_link.element2_id}"}}  # in show of elements_controller"
+      
       @elements.concat elements
+      @elements.uniq!
       @element_links.concat inter_element_links
+      @element_links.uniq!
+      #d# 
+      logger.debug ">>>  @elements = #{@elements.map {|element| element.id }}  # in show of elements_controller"
+      logger.debug ">>>  @element_links = #{@element_links.map {|iel_link| "#{iel_link.element1_id} #{iel_link.element2_id}"}}  # in show of elements_controller"
     }
     
     logger.debug ">>>  @elements = #{@elements}  # in show of elements_controller"
     logger.debug ">>>  @element_links = #{@element_links}  # in show of elements_controller"
     
     
-    @array_of_ids = params[:id].split(',').map(&:to_i)
-    @array_of_ids.uniq!
+    @array_of_ids = @elements.map {|element| element.id }
+    logger.debug ">>>  @array_of_ids = #{@array_of_ids}  # in show of elements_controller"
+    
+    #@array_of_ids.uniq!
 =begin
     #d# 
-    logger.debug ">>>  @array_of_ids = #{@array_of_ids}  # in show of elements_controller"
+    
     
     ## now go through each id in @array_of_ids, find it's requested degree_of_views (there maybe more than one), choose the largest, make sure this isn't over the 
     ##  maximum limit of 6, then iterate over this, collecting all elements and iel_links
