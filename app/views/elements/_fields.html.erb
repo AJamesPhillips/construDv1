@@ -1,0 +1,6 @@
+<%= form_for @element do |f| %>
+	<%= f.text_field :content, :placeholder => @element.subtype %>
+	<%= f.hidden_field :element_type, :value => 'node' %>
+	<%= f.hidden_field :subtype, :value => @element.subtype %>
+	<%= f.submit 'create' %>
+<% end %>
