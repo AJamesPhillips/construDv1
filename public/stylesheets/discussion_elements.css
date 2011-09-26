@@ -228,8 +228,9 @@ div.supports {
     
 }
 div.horizontal_connection > div.symbol_container > div > div.supports {
-    left: 0px;
     background-color: transparent;
+    left: 0px;
+    top: -6px;
 }
 div.vertical_connection > div.symbol_container > div > div.supports {
     left: -7px;

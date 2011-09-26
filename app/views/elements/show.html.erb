@@ -11,7 +11,7 @@
 
 <% prepared_data = prepare_json_data(@elements, @element_links).to_json.html_safe %>
 <% content_for :head do %>
-	<%= javascript_include_tag "ajp.utilities", "csd/csd", "csd/csd.data_manager", "csd/csd.views", "csd/csd.model" %>
+	<%= javascript_include_tag "js_utilities/ajp.utilities", "csd/csd", "csd/csd.data_manager", "csd/csd.views", "csd/csd.model" %>
 	<%= stylesheet_link_tag "discussion_elements" %>
 	<script id="csd_data">
 		$(document).ready( function () {
