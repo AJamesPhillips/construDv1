@@ -12,21 +12,21 @@
 	//store, retrieve and destroy record of current selected discussion element
 	CSD.session.selected_element_html_id = function (the_selection_element) {
 		if (the_selection_element) {
-			this.element_html_id = the_selection_element.id;
+			CSD.session.selected_element_html_id.element_html_id = the_selection_element.id;
 		} else if (the_selection_element === false) {
-			this.element_html_id = undefined;
+			CSD.session.selected_element_html_id.element_html_id = undefined;
 		} else {
-			return this.element_html_id;
+			return CSD.session.selected_element_html_id.element_html_id;
 		}
 	};
 	
 	
 	
 	CSD.session.save_selection = function (clicked_element_html_id, start_point_of_selection, end_point_of_selection) {
-		this.selections = this.selections || {};
-		this.selections[clicked_element_html_id] = this.selections[clicked_element_html_id] || [];
-		var elements_selection_components = this.selections[clicked_element_html_id];
-		var copy_of_elements_selection_components = [].concat(this.selections[clicked_element_html_id]); // creates a copy of it.
+		CSD.session.save_selection.selections = CSD.session.save_selection.selections || {};
+		CSD.session.save_selection.selections[clicked_element_html_id] = CSD.session.save_selection.selections[clicked_element_html_id] || [];
+		var elements_selection_components = CSD.session.save_selection.selections[clicked_element_html_id];
+		var copy_of_elements_selection_components = [].concat(CSD.session.save_selection.selections[clicked_element_html_id]); // creates a copy of it.
 		var i=0, len = elements_selection_components.length;
 		var a_selection_component;
 		var still_need_to_inserted_start_position = still_need_to_inserted_end_position = true;
@@ -62,7 +62,7 @@
 			}
 			
 			//reassign values stored in shorthand variable name
-			this.selections[clicked_element_html_id] = copy_of_elements_selection_components;
+			CSD.session.save_selection.selections[clicked_element_html_id] = copy_of_elements_selection_components;
 		} else {
 			console.log('invalid parameters:\nStart point needs to be < than end point.  start_point_of_selection = ' + start_point_of_selection + ' but end_point_of_selection = ' + end_point_of_selection + '  #in .save_selection');
 		}

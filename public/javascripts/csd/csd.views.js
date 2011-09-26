@@ -10,8 +10,7 @@
 
 	//   render argument elements in html using divs and jQuery
 	CSD.views.show_view = function () {
-		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.render_html, CSD.views_manager.degrees_of_view);
-		
+		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.now_actually_show_view, CSD.views_manager.degrees_of_view);
 	};
 	
 	
@@ -21,6 +20,12 @@
 		} else {
 			$('#edit_discussion').attr('value','start editing');
 		}
+	};
+
+	CSD.views.now_actually_show_view = function () {
+		CSD.views.render_html();
+		CSD.routes.refresh();
+		CSD.views.draw_selections();
 	};
 
 
@@ -59,7 +64,6 @@
 		
 		root_element.render_in_html(the_jquery_html, other_parameters);
 		the_jquery_html.append($('<div></div>').addClass('divClear'));
-		CSD.routes.refresh();
 	};
 	
 /*	
@@ -342,8 +346,8 @@
 	
 	
 	//highlight selected text with spans
-	TEMP.draw_selections = function (a_specific_element_id) {
-		var html_elements_with_selections = AJP.u.keys(TEMP.save_selection.selections);
+	CSD.views.draw_selections = function (a_specific_element_id) {
+		var html_elements_with_selections = AJP.u.keys(CSD.session.save_selection.selections);
 		var i = 0, len;
 			var selection_components_for_one_element;
 			var jquery_element;
@@ -375,7 +379,7 @@
 		if (a_specific_element_id) {
 			html_elements_with_selections = [];
 			//check it's in html_elements_with_selections
-			if (TEMP.save_selection.selections[a_specific_element_id]) {
+			if (CSD.session.save_selection.selections[a_specific_element_id]) {
 				html_elements_with_selections.push(a_specific_element_id);
 			}
 			// else, leave the html_elements_with_selections array empty so we do nothing
@@ -384,7 +388,7 @@
 		
 		len = html_elements_with_selections.length;
 		for (i=0; i < len; i += 1) {
-			selection_components_for_one_element = TEMP.save_selection.selections[html_elements_with_selections[i]];
+			selection_components_for_one_element = CSD.session.save_selection.selections[html_elements_with_selections[i]];
 			jquery_element = $('#'+html_elements_with_selections[i]);
 			this_divs_original_text = jquery_element.text();
 			//reset
@@ -452,7 +456,7 @@
 					next_selection_component = selection_components_for_one_element[i_2+1+number_of_selection_components_to_skip_in_loop];
 					end_point_of_section = next_selection_component.position;
 				} else if (a_selection_component.type !== 'end') {
-					console.log("something's gone wrong #in TEMP.draw_selections"); 
+					console.log("something's gone wrong #in CSD.views.draw_selections"); 
 				} else {
 					//we've reached the end so set the end_point_of_section to the maximum
 					end_point_of_section = this_divs_original_text.length;
@@ -471,7 +475,7 @@
 					for (i_3=0; i_3 < len_3; i_3 += 1) {
 						span_ids.push(open_selections[i_3].span_id);
 					};
-					jquery_html_for_this_section = $('<span></span>').append(text_for_this_section).attr('multi_id', span_ids.join(' ')).addClass('highlighted');
+					jquery_html_for_this_section = $('<span></span>').append(text_for_this_section).attr('multi_id', span_ids.join(' ')).addClass('highlighted_text');
 					
 					html_sections.push(jquery_html_for_this_section);
 				} else {

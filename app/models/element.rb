@@ -31,7 +31,7 @@ class Element < ActiveRecord::Base
   
   scope :statements, lambda { where(:element_type => 'node', :subtype => 'statement') }
   scope :references, lambda { where(:element_type => 'node', :subtype => 'reference') }
-  scope :statements_and_references, lambda { where(:element_type => 'node', :subtype => ['statement', 'reference']) }
+  scope :statements_and_references, lambda { where(:element_type => 'node', :subtype => ['statement', 'reference', 'question']) }
   
   
   

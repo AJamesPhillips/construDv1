@@ -66,10 +66,10 @@ class User < ActiveRecord::Base
   end
 
   
-  def self.authenticate(email, submittedPassword)
-    user = find_by_email(email)
+  def self.authenticate(params)
+    user = find_by_email(params[:email])
     return nil if user == nil
-    return user if user.hasSamePassword?(submittedPassword)
+    return user if user.hasSamePassword?(params[:password])
     ##default, if user email is valid but passwords is not, we will implicitly return 'nil' 
   end
   

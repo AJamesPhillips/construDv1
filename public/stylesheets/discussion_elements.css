@@ -323,4 +323,7 @@ div.element_outer > div.element_inner:hover {
 	background-color: #dfeeff;
 }
 
-
+/* selected / highlight text within element node */
+.highlighted_text {
+	background-color: #ccebef;
+}

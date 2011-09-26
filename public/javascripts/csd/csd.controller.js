@@ -6,10 +6,8 @@
 //############################### 
 
 	CSD.controller.display_discussion = function() {
-		CSD.routes.add_discussion_container_handlers();
+		CSD.routes.setup();
 		CSD.views.show_view();
-		
-		
 	}; //  end of   CSD.controller.display_discussion
 
 
@@ -18,7 +16,7 @@
     //  Find out if it has any elements linked to it.  If so, display all of them.
     //	If any are connection elements, then display another degree_of_view beyond that 
     //	(i.e. display the node this element connects from/to through the connection element)
-	CSD.controller.element.left_mouse_up = function (the_element) {
+	CSD.controller.element.left_mouse_down = function (the_element) {
 		var ids_of_more_elements_to_show_in_view = [],
     		ids_of_linked_elements,
     		linked_connection_elements,
@@ -46,6 +44,7 @@
     	
     	CSD.views_manager.add_element(ids_of_more_elements_to_show_in_view);
     	CSD.views.show_view();
+    	//CSD.routes.refresh();  //@TODO is this the right place to put it?
 	};
 	
 	
