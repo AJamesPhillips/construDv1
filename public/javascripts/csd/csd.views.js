@@ -5,7 +5,7 @@
 //$(function () {    
 
 //############################### 
-//###############################    VIEW
+//###############################    VIEWS
 //###############################    
 
 	//   render argument elements in html using divs and jQuery
@@ -13,6 +13,20 @@
 		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.render_html, CSD.views_manager.degrees_of_view);
 		
 	};
+	
+	
+	CSD.views.update_editing_button = function () {
+		if (CSD.session.editing) {
+			$('#edit_discussion').attr('value','stop editing');
+		} else {
+			$('#edit_discussion').attr('value','start editing');
+		}
+	};
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//###############################    VIEWS (render discussions in nested divs, no html5)  
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 	CSD.views.render_html = function () {
 		var root_element = undefined,
@@ -322,8 +336,165 @@
 	};
 	
 	
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+//###############################    VIEWS (drawing selection boxes)       
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 	
 	
+	//highlight selected text with spans
+	TEMP.draw_selections = function (a_specific_element_id) {
+		var html_elements_with_selections = AJP.u.keys(TEMP.save_selection.selections);
+		var i = 0, len;
+			var selection_components_for_one_element;
+			var jquery_element;
+			var this_divs_original_text;
+			//var previous_starting_point;
+			var html_sections;
+			var i_2 = 0, len_2;
+				var a_selection_component;
+				var this_selection_components_type;
+				var i_3 = 0, len_3;
+				var another_selection_component;
+				var co_position_components;
+				var number_of_selection_components_to_skip_in_loop;
+				var this_and_co_position_components;
+					var i_4 = 0, len_4;
+				
+				var open_selections = [];
+				var next_selection_component;
+				
+				var start_point_of_this_section;
+				var end_point_of_section;
+				
+				
+				var text_for_this_section;
+				var span_ids;
+				var jquery_html_for_this_section;
+		
+		//reduce html_elements_with_selections array to contain only the a_specific_element_id
+		if (a_specific_element_id) {
+			html_elements_with_selections = [];
+			//check it's in html_elements_with_selections
+			if (TEMP.save_selection.selections[a_specific_element_id]) {
+				html_elements_with_selections.push(a_specific_element_id);
+			}
+			// else, leave the html_elements_with_selections array empty so we do nothing
+		}
+		
+		
+		len = html_elements_with_selections.length;
+		for (i=0; i < len; i += 1) {
+			selection_components_for_one_element = TEMP.save_selection.selections[html_elements_with_selections[i]];
+			jquery_element = $('#'+html_elements_with_selections[i]);
+			this_divs_original_text = jquery_element.text();
+			//reset
+			number_of_selection_components_to_skip_in_loop = 0;
+			html_sections = [];
+			//set default value for html_sections[0]
+			html_sections[0] = this_divs_original_text;
+			
+			
+			len_2 = selection_components_for_one_element.length;
+			for (i_2=0; i_2 < len_2; i_2 += 1) {
+				a_selection_component = selection_components_for_one_element[i_2];
+				this_selection_components_type = a_selection_component.type;
+				
+				//find start point of this selection/selection group
+				start_point_of_this_section = a_selection_component.position;
+				
+				//find if there are any co-position components of the same type
+				len_3 = len_2;
+				co_position_components = [];
+				this_and_co_position_components = [];
+				for (i_3 = (i_2+1); i_3 < len_3; i_3 += 1) {
+					another_selection_component = selection_components_for_one_element[i_3];
+					if ((another_selection_component.position === start_point_of_this_section) && (another_selection_component.type === this_selection_components_type)) {
+						co_position_components.push(another_selection_component);
+					} else {
+						break; // we can do this as the selection_components should be in order and grouped by type 'end' first, then type 'start' for co-position selection compoenents 
+					}
+				};
+				number_of_selection_components_to_skip_in_loop = co_position_components.length;
+				this_and_co_position_components.push(a_selection_component);
+				this_and_co_position_components = this_and_co_position_components.concat(co_position_components);
+				
+				//update list of open_selections
+				if (a_selection_component.type === 'start') {
+					//add this selection & any co-position 'start'ing selections to the list of open_selections
+					open_selections = open_selections.concat(this_and_co_position_components);
+				} else { // selection component is an 'end' component
+					//find and remove this and all other co-position 'end' components from the list of open_selections
+
+					len_4 = this_and_co_position_components.length;
+					for (i_4=0; i_4 < len_4; i_4 += 1) {  //loop through each co-position 'end' selection_component
+						//var copy_of_open_selections = [].concat(open_selections);
+						len_3 = open_selections.length;
+						for (i_3=0; i_3 < len_3; i_3 += 1) { //loop through each open_selection
+							if (open_selections[i_3].span_id === this_and_co_position_components[i_4].span_id) {
+								//this open selection is in the list of selections that are ending, so remove it from the list of open_selections.
+								//copy_of_open_selections.splice(i_3,1);		
+								open_selections.splice(i_3,1);
+								break;
+							}
+						};
+						//open_selections = copy_of_open_selections;
+					};
+					
+				}
+				
+				// the first time this loop runs, overwrite the default value for html_sections[0]
+				if (i_2 === 0) {  
+					html_sections[0] = this_divs_original_text.slice(0, start_point_of_this_section);
+				}
+				
+				//find next component
+				if ((i_2 + 1 + number_of_selection_components_to_skip_in_loop) < len_2) {
+					next_selection_component = selection_components_for_one_element[i_2+1+number_of_selection_components_to_skip_in_loop];
+					end_point_of_section = next_selection_component.position;
+				} else if (a_selection_component.type !== 'end') {
+					console.log("something's gone wrong #in TEMP.draw_selections"); 
+				} else {
+					//we've reached the end so set the end_point_of_section to the maximum
+					end_point_of_section = this_divs_original_text.length;
+				}
+				
+				
+				//get the text with in this div for this selection/selection group or this 'end selection component' to 'start selection component' section
+				text_for_this_section = this_divs_original_text.substring(start_point_of_this_section, end_point_of_section);
+				
+				
+				//check if there are any open_selections, 
+				if (open_selections.length !== 0) {
+					//for each of the 'start' selection components that are currently 'open', make a span with their ids in the multi_id attribute
+					len_3 = open_selections.length;
+					span_ids = [];
+					for (i_3=0; i_3 < len_3; i_3 += 1) {
+						span_ids.push(open_selections[i_3].span_id);
+					};
+					jquery_html_for_this_section = $('<span></span>').append(text_for_this_section).attr('multi_id', span_ids.join(' ')).addClass('highlighted');
+					
+					html_sections.push(jquery_html_for_this_section);
+				} else {
+					//there are no open_selections so just add the text_for_this_section to the html_sections
+					html_sections.push(text_for_this_section);
+				}
+				
+				//advance loop over already processed co-position elements.
+				i_2 += number_of_selection_components_to_skip_in_loop;
+			};
+			
+			//replace html contents of an element div with selections, with the generated html and jquery content of those selections:
+			len_2 = html_sections.length;
+			jquery_element.html('');
+			for (i_2=0; i_2 < len_2; i_2 += 1) {
+				html_sections[i_2];
+				jquery_element.append(html_sections[i_2]);
+			};
+			
+			//html_sections 
+		}; // end of loop over html_elements_with_selections
+		
+	}; // end of drawing selections
 	
 
 	
