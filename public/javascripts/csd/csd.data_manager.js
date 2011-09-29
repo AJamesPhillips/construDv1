@@ -42,7 +42,7 @@
 	
 	// array_of_elements_ids_to_get  will be in the form of N-n,N-n,N-n Where N is the id of 
 	//  the element to get and 'n' is the degrees of view around that element.
-	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available) {  //, degrees_of_neighbours) {
+	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available, parameter1, parameter2) {  //, degrees_of_neighbours) {
 		// implement AJAX for single element request
 		if (array_of_elements_ids_to_get.length !== 0) {
 			$.getJSON(("/elements/" + array_of_elements_ids_to_get + ".json"), function(data) {
@@ -73,7 +73,7 @@
 				}
 				
 				if (all_elements_are_now_present) {
-					CSD.helper.call_provided_function(function_to_call_once_data_is_available);
+					CSD.helper.call_provided_function(function_to_call_once_data_is_available, parameter1, parameter2);
 				}
 			});
 		} else {

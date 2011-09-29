@@ -9,11 +9,26 @@
 	//set default of this session to not editing.
 	CSD.session.editing = false;
 	
+	
+	CSD.session.root_element = undefined;
+	
+	
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+//###############################    SESSION (selections)       
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+	
+	
 	//store, retrieve and destroy record of current selected discussion element
-	CSD.session.selected_element_html_id = function (the_selection_element) {
-		if (the_selection_element) {
-			CSD.session.selected_element_html_id.element_html_id = the_selection_element.id;
-		} else if (the_selection_element === false) {
+	CSD.session.selected_element_html_id = function (the_selected_html_element_not_a_jquery_object) {
+		var the_selected_element = the_selected_html_element_not_a_jquery_object;
+		if (the_selected_element) {
+			if (the_selected_element.id) {
+				CSD.session.selected_element_html_id.element_html_id = the_selected_element.id;
+			} else {
+				console.log("incorrect parameter for CSD.session.selected_element_html_id.  Was expecting a discussion element object with .id() method but got: '" + the_selected_element + "' which has a typeof= '" + (typeof the_selected_element) + "'");
+			}
+				
+		} else if (the_selected_element === false) {
 			CSD.session.selected_element_html_id.element_html_id = undefined;
 		} else {
 			return CSD.session.selected_element_html_id.element_html_id;
@@ -22,7 +37,9 @@
 	
 	
 	
-	CSD.session.save_selection = function (clicked_element_html_id, start_point_of_selection, end_point_of_selection) {
+	CSD.session.save_selection = function (clicked_element_html_id, start_point_of_selection, end_point_of_selection, span_id, selection_style) {
+		var selection_style = selection_style || 'highlighted_text';
+		
 		CSD.session.save_selection.selections = CSD.session.save_selection.selections || {};
 		CSD.session.save_selection.selections[clicked_element_html_id] = CSD.session.save_selection.selections[clicked_element_html_id] || [];
 		var elements_selection_components = CSD.session.save_selection.selections[clicked_element_html_id];
@@ -30,8 +47,9 @@
 		var i=0, len = elements_selection_components.length;
 		var a_selection_component;
 		var still_need_to_inserted_start_position = still_need_to_inserted_end_position = true;
-		var start_selection_componenet = {position: start_point_of_selection, type: 'start', span_id: ('A_SPAN_'+len)};
-		var end_selection_componenet = {position: end_point_of_selection, type: 'end', span_id: ('A_SPAN_'+len)};
+		var span_id = span_id || ((len/2) + '_TEMP');
+		var start_selection_componenet = {position: start_point_of_selection, type: 'start', span_id: ('SPAN_'+span_id), style: selection_style};
+		var end_selection_componenet = {position: end_point_of_selection, type: 'end', span_id: ('SPAN_'+span_id), style: selection_style};
 		
 		if (start_point_of_selection < end_point_of_selection) {
 			//get each selection component and read it's position.
@@ -67,5 +85,9 @@
 			console.log('invalid parameters:\nStart point needs to be < than end point.  start_point_of_selection = ' + start_point_of_selection + ' but end_point_of_selection = ' + end_point_of_selection + '  #in .save_selection');
 		}
 		
+	};
+	
+	CSD.session.clear_all_selections = function () {
+		CSD.session.save_selection.selections = {};
 	};
 

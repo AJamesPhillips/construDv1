@@ -1,17 +1,39 @@
 <div id="discussion_options">
-	<input id="edit_discussion" type="submit" value="edit" style="float:right;"/>
+	<input id="edit_discussion" class="option_button" type="submit" value="edit" />
+	<input id="copy_link_to_current_discussion" class="option_button" type="submit" value="copy link" />
+</div>
+<div class="divClear"></div>
+<div id="discussion_definition" >
+	Discussion defintion goes here (when there is a question element as the root)
+</div>
+<div class="divClear"></div>
+<div id="discussion_container">
+	<!--div id="pro_side" class="discussion_side">Yes because...
+		<input id="show_other_pro_answers" class="option_button" type="submit" value="show 3 others" />
+		<div id="pro_side_discussion_container">
+		</div>
+	</div>
+	<div id="dn_side" class="discussion_side">We don't know because...
+		<input id="show_other_dn_answers" class="option_button" type="submit" value="show 3 others"  />
+		<div id="dn_side_discussion_container">
+		</div>
+	</div>
+	<div id="anti_side" class="discussion_side">No because...
+		<input id="show_other_anti_answers" class="option_button" type="submit" value="show 3 others" />
+		<div id="anti_side_discussion_container">
+		</div>
+	</div-->
 </div>
 <div class="divClear"></div>
 
-<div id="discussion_container"></div>
-
 <% prepared_data = prepare_json_data(@elements, @element_links).to_json.html_safe %>
 <% content_for :head do %>
-	<%= javascript_include_tag "js_utilities/ajp.utilities", "csd/csd", "csd/csd.controller", "csd/csd.data_manager", "csd/csd.model", "csd/csd.routes", "csd/csd.session", "csd/csd.views" %>
+	<%= javascript_include_tag "js_utilities/ajp.utilities", "csd/csd", "csd/csd.controller", "csd/csd.data_manager", "csd/csd.model", "csd/csd.routes", "csd/csd.session", "csd/csd.views", "csd/csd.views_manager" %>
 	<%= stylesheet_link_tag "discussion_elements" %>
 	<script id="csd_data">
 		$(document).ready( function () {
-			CSD.views_manager.add_element(<%= @array_of_ids.to_json.html_safe %>); //[1,5,7,14,13,15,16,17,19,20,21,2,4]
+			CSD.data_manager.add_data(<%= prepared_data %>);
+			CSD.views_manager.add_elements(<%= @array_of_ids.to_json.html_safe %>); //[1,5,7,14,13,15,16,17,19,20,21,2,4]
 			CSD.controller.display_discussion();
 		});
 	</script>

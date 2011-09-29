@@ -11,12 +11,19 @@
 	}; //  end of   CSD.controller.display_discussion
 
 
-
+	
+	CSD.controller.element = {node: 	  { question:  {},
+									 		answer:    {},
+									 		statement: {}},
+							  connection: {},
+							  part: 	  {} };
+	
     //Left mouse button pressed on a discussion element.
     //  Find out if it has any elements linked to it.  If so, display all of them.
     //	If any are connection elements, then display another degree_of_view beyond that 
     //	(i.e. display the node this element connects from/to through the connection element)
-	CSD.controller.element.left_mouse_down = function (the_element) {
+    
+	CSD.controller.element.left_mouse_down = function (the_element, html_div_to_render_in, root_element) {
 		var ids_of_more_elements_to_show_in_view = [],
     		ids_of_linked_elements,
     		linked_connection_elements,
@@ -42,18 +49,31 @@
 		};
     	
     	
-    	CSD.views_manager.add_element(ids_of_more_elements_to_show_in_view);
-    	CSD.views.show_view();
+    	CSD.views_manager.add_elements(ids_of_more_elements_to_show_in_view);
+    	CSD.views.show_view(html_div_to_render_in, root_element);
     	//CSD.routes.refresh();  //@TODO is this the right place to put it?
 	};
 	
+	
+	
+	CSD.controller.element.node.answer.left_mouse_down = function (the_element) {
+		if (CSD.session.in_question_format) {
+			//find all the connections to this question of the same type as the element.
+			
+			//SD.session.root_element.
+		}
+		
+		//$('#pro_side_discussion_container').animate({ height: 'hide', opacity: 'hide' }, 'slow');
+		$('#pro_side_discussion_container').text('');
+		CSD.controller.element.left_mouse_down(the_element, $('#pro_side_discussion_container'), the_element);
+	};
 	
 	
 //############################### 
 //###############################    HELPER   
 //############################### 
 	
-	CSD.helper.call_provided_function = function (function_to_call) {
+	CSD.helper.call_provided_function = function (function_to_call, parameter1, parameter2) {
 		var debugging_info__function_calling_from;// = "The function was called from the top!";
 		if (CSD.helper.call_provided_function.caller === null) {
 			debugging_info__function_calling_from = "The function was called from the top!";
@@ -70,7 +90,7 @@
 		console.log('debugging_info__function_calling_from = ' + debugging_info__function_calling_from);
 		
 		if (typeof function_to_call === 'function') {
-			function_to_call();
+			function_to_call(parameter1, parameter2);
 		} else {
 			throw {
 				name: 'no function to call',

@@ -1,59 +1,4 @@
-#loading {
-	position: fixed;
-	top: 0px;
-	background-color: white;
-	display: block;
-	opacity: 0.95;
-	z-index: 2147483646;
-}
 
-#main_page {
-	position: absolute;
-	top: 0px;
-	width: 1024px;
-	padding: 0 0 20px 0;
-	z-index: 0;
-}
-
-#main_page, div.symbol_container {
-	background-color: #fbfcfe;
-}
-
-
-
-.discussion_heading_part {
-	margin: 0px 20px 0px;
-}
-
-
-.discussion_heading_part h3 {
-	margin: 5px 5px;
-}
-
-
-.discussion_side {
-	margin: 20px 20px 0px 20px;
-	float: left;
-	width: 29%;
-	
-}
-.discussion_side_heading h4 {
-	margin: 0;
-}
-
-.side_specific_definition {
-	font-style: italic; 
-}
-
-
-#author_and_critic {
-	width: 100px;
-}
-
-
-#author_and_critic h5 {
-	margin: 0px;
-}
 
 
 
@@ -72,6 +17,11 @@ div.element_outer > div.element_inner {
 	padding: 0 5px;
 	display:inline-block; /*shrinks div to fit text */
 	border-radius: 2px;
+}
+
+
+div.answer_node {
+	margin: 20px 0 0;
 }
 
 
@@ -296,6 +246,10 @@ div.dispute.unanswered > div.symbol_container {
 
 
 
+
+
+
+
 /*  on hover  */
 div.vertical_connection > div.symbol_container:hover, 
 div.horizontal_connection > div.symbol_container:hover,
@@ -323,7 +277,11 @@ div.element_outer > div.element_inner:hover {
 	background-color: #dfeeff;
 }
 
+
 /* selected / highlight text within element node */
-.highlighted_text {
+.discussion_node_part {  /* this is done by use drag and select */
+	border: thin dashed black;
+}
+.highlighted_text {  /* this is done by use drag and select */
 	background-color: #ccebef;
 }

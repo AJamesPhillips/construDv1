@@ -32,14 +32,31 @@
 	// add onClick handlers for the elements
 	CSD.routes.add_element_click_handlers = function () {
 	    
-		$(".element_inner, .symbol_container").bind('mousedown', function (e) {
+		$(".element_inner, .symbol_container").bind('mousedown.CSD', function (e) {
 			CSD.session.selected_element_html_id(this);
 			
 			if (!CSD.session.editing) {
 				var the_element = CSD.model.get_element_by_id(CSD.session.selected_element_html_id());
-				CSD.controller.element.left_mouse_down(the_element);
+				var element_type = the_element.element_type();
+				var subtype = the_element.subtype();
+				
+				if (element_type === 'node') {
+					
+					if ($(this).hasClass('answer_node')) {
+						CSD.controller.element.node.answer.left_mouse_down(the_element);
+					} else {
+						CSD.controller.element.left_mouse_down(the_element);
+					}
+				} else {
+					CSD.controller.element.left_mouse_down(the_element);
+				}
+				
+				
+			} else {
+				//ignore this interaction by the user
 			}
 		});
+		
 		
 		
 		//$('.element_inner, .symbol_container').bind('mouseup.CSD', function (event1, ui) {
@@ -69,12 +86,12 @@
 	
 	
 	CSD.routes.add__edit_discussion__button_handlers = function () {
-		$("#edit_discussion").bind('mousedown', function (e) {
+		$("#edit_discussion").bind('mousedown.CSD', function (e) {
 			CSD.session.editing = !CSD.session.editing;
 			CSD.views.update_editing_button();
 		});
 	
-		$("#edit_discussion").bind('mouseup', function (e) {
+		$("#edit_discussion").bind('mouseup.CSD', function (e) {
 			e.stopPropagation();  // probably not really needed but prevents aberrant calls to 
 			// .get_selected_text which fails to provide the selected_text needed for 
 		});
@@ -229,7 +246,7 @@
 			user_selection.collapseToStart();
 			
 			//save selection to list of selections
-			CSD.session.save_selection(id_of_mousedown_element, starting_point, (starting_point+length_to_take_from_selection));
+			CSD.session.save_selection(id_of_mousedown_element, starting_point, (starting_point+length_to_take_from_selection), undefined, undefined);
 			
 		} else {
 			//just treat this as a mouse click and just

@@ -101,6 +101,15 @@ class ElementsController < ApplicationController
     #d# 
     logger.debug ">>>  @element_ids = #{@element_ids}  # in show of elements_controller"
     
+    ##quickly test that this isn't a request for a question element, else modify the request to have 6 degrees of view
+    if @element_ids.length == 1
+      element_id = @element_ids.keys[0]
+      if Element.find(element_id).is_question_node?
+        @element_ids[element_id] = 6;
+      end
+    end
+    
+    
     ##now go through each element_id (the keys) of @element_ids and loop over, collecting their iel_linked elements
     @elements = []
     @element_links = []
@@ -139,43 +148,7 @@ class ElementsController < ApplicationController
     @array_of_ids = @elements.map {|element| element.id }
     logger.debug ">>>  @array_of_ids = #{@array_of_ids}  # in show of elements_controller"
     
-    #@array_of_ids.uniq!
-=begin
-    #d# 
     
-    
-    ## now go through each id in @array_of_ids, find it's requested degree_of_views (there maybe more than one), choose the largest, make sure this isn't over the 
-    ##  maximum limit of 6, then iterate over this, collecting all elements and iel_links
-    @array_of_ids.each
-    
-    
-    
-    @elements = @array_of_ids.map {|id| Element.find(id) }  
-    #d# logger.debug ">> @elements.each.id = #{@elements.map(&:id).join(', ') } # in show of elements_controller.rb"
-    @element_links = @elements.map {|element| element.inter_element_links }
-    @element_links.flatten!.uniq!
-    @elements = @element_links.map {|link| link.elements } unless @element_links.empty?
-    ## now get all inter_element_links for the new elements.
-    @elements.flatten!
-    #d# logger.debug ">> @elements.each.id = #{@elements.map(&:id).join(', ') } # in show of elements_controller.rb"
-    @elements.uniq!
-    #d# logger.debug ">> @elements.uniq! = #{@elements.map(&:id).join(', ') } # in show of elements_controller.rb"
-    
-    @element_links = @elements.map {|element| element.inter_element_links }
-    @element_links.flatten!
-    #d# logger.debug ">> @element_links = #{@element_links.map {|iel_link| "#{iel_link.element1_id}_#{iel_link.element2_id}"}.join(', ') } # in show of elements_controller.rb"
-    @element_links.uniq!
-    #d# logger.debug ">> @element_links.uniq! = #{@element_links.map {|iel_link| "#{iel_link.element1_id}_#{iel_link.element2_id}"}.join(', ') } # in show of elements_controller.rb"
-    
-    
-    #logger.debug ">> @element = #{@element.attributes} #in index of elements_controller"
-    #logger.debug ">> @element.inter_element_links1 = #{@element.inter_element_links1} #in index of elements_controller"
-    #logger.debug ">> @element.inter_element_links2 = #{@element.inter_element_links2} #in index of elements_controller"
-    #logger.debug ">> @element_links = #{@element_links} #in index of elements_controller"
-    
-    #@neighbouring_elements = @elements[0].elements
-    #logger.debug ">> @neighbouring_elements.class = #{@neighbouring_elements.class} #in index of elements_controller"
-=end    
     respond_to do |format|
       format.html 
       format.json
