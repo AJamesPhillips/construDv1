@@ -6,9 +6,64 @@
 //###############################    
 
 	//   render argument elements in html using divs and jQuery
-	CSD.views.show_view = function (html_div_to_render_in, root_element) {
-		CSD.model.ensure_array_of_elements_are_available_and_then_call_function(CSD.views_data.to_display, CSD.views.now_actually_show_view, CSD.views_manager.degrees_of_view, html_div_to_render_in, root_element);
+	CSD.views.show_view = function (discussion_context) {
+		CSD.views_helper.recalculate_element_parts_for_draw_selections_method(); // needs to be before CSD.views.render_discussion_html(); so that 'if (content_for_part_node) { save_selection' works properly in 'CSD.views.html_for_a_node'  
+		if (discussion_context === 'general') {
+			CSD.views.prepare_document.for_rendering_a_general_discussion();
+			CSD.routes.setup();
+			CSD.views.render_discussion_html(discussion_context);
+			
+		} else if (discussion_context === 'question') {
+			CSD.views.prepare_document.for_rendering_a_question_and_its_answers();
+			CSD.routes.setup();
+			CSD.views.render_discussion_html(discussion_context);
+			
+			//now render the argument sides
+				//n.b. for pro, dn and anti, 
+				//  if root_element_id === undefined, and all_answer_ids === [], there is no know answer for the question posed
+				//			=> render a "add an answer" box
+				//	if root_element_id === undefined, and all_answer_ids === [some-ids], there are several answers, and one has yet to be chosen for display
+				//			=> render multiple answers (unless all bar one are absent from the 'ids_in_view')
+				//	if root_element_id === some-id, and all_answer_ids === [], there  is only 1 answers, and it's chosen for display
+				//			=> render this element as root
+				//	if root_element_id === some-id, and all_answer_ids === [some-ids], there are several answers and 1 has been chosen for display
+				//			=> render this element as root
+			var sides = CSD.views_manager.answer_discussion_contexts();
+			var i = 0, len = sides.length;
+				var side;
+				
+			for (i=0; i < len; i += 1) {
+				side = sides[i];
+				CSD.views.show_view.show_a_side(side);
+			};
+			
+		} else if (CSD.views_manager.answer_discussion_contexts().contains(discussion_context)) {
+			CSD.views.show_view.show_a_side(discussion_context);
+		} else {
+			console.log('error, discussion_context = "' + discussion_context + '"  #in CSD.views.show_view');
+		}
+		
+		CSD.routes.refresh();
+		CSD.views.draw_selections();
 	};
+	
+	CSD.views.show_view.show_a_side = function (discussion_context) {
+		var context_data = CSD.session.view[discussion_context];
+		var root_element_id = context_data.root_element_id;
+		var number_of_other_answers;
+
+		if (root_element_id) {
+			number_of_other_answers = context_data.all_answer_ids;
+			CSD.views.render_discussion_html(discussion_context);
+		} else {
+			if (true) {
+				CSD.views.render_multiple_answer_selection_html(discussion_context);
+			} else {
+				CSD.views.render_multiple_answer_selection_html(discussion_context);
+			}
+		}
+	};
+	
 	
 	
 	CSD.views.update_editing_button = function () {
@@ -19,42 +74,20 @@
 		}
 	};
 
-	CSD.views.now_actually_show_view = function (html_div_to_render_in, root_element) {
-		CSD.views.recalculate_element_parts_for_draw_selections_method(); // needs to be before CSD.views.render_html(); so that 'if (content_for_part_node) { save_selection' works properly in 'CSD.views.html_for_a_node'  
-		CSD.views.render_html(html_div_to_render_in, root_element);
-		CSD.routes.refresh();
-		CSD.views.draw_selections();
-	};
-
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //###############################    VIEWS (render discussions in nested divs, no html5)  
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-	CSD.views.render_html = function (html_div_to_render_in, root_element) {
+	CSD.views.render_discussion_html = function (discussion_context) {
+		var context_data = CSD.session.view[discussion_context];
 		var element_id_it_connects_to;
 		var element_it_connects_to;
 		var other_parameters = {};
-			
-		// @TODO should make sure all elements in CSD.views_data are actually connected to each other.
+		var root_element_id = context_data.root_element_id;
+		var root_element = CSD.model.get_element_by_id(root_element_id);
+		var html_div_to_render_in = $('#' + context_data.html_id_of_view_container).text('');
 		
-		//find the element id which has no connections to another element which is on display, (i.e. it's in CSD.views_data).
-		if (root_element) {
-			if (!AJP.u.is_array(root_element)) {
-				root_element = [root_element];
-			}
-		} else {
-			root_element = CSD.views_helper.find_root_element_to_display(CSD.views_data.to_display);
-		}
-		
-		
-		// @TODO logic to handle root_element_id  when it returns an array of length 0 because the current selection of elements is cyclic
-		//	or > 1 because there are more than 2 possible root elements.
-		//	i.e. will need a pop menu for user to select which root to display.
-		//d/ alert ('root_element_id = ' + root_element_id[0] + '  # in CSD.views.render_html');
-		var a_debug = root_element[0].id();
-		root_element = root_element[0];
-		CSD.session.root_element = root_element;
 		
 		//find out if it's a connection element.  if it is, find out if it connects to a node element, 
 		// if so, pass it {array_of_remaining_sibling_vertical_connections: []} so it renders as a vertical connection, rather than a horizontal one.
@@ -66,14 +99,7 @@
 			}
 		}
 		
-		// if it's a question node then render it in the format for questions and answers
-		if ((root_element.element_type() === 'node') && (root_element.subtype() === 'question')) {
-			html_div_to_render_in = html_div_to_render_in || $('#discussion_definition').text('');
-			root_element.render_in_html(html_div_to_render_in);
-		} else {
-			html_div_to_render_in = html_div_to_render_in || $('#discussion_container').text('');
-			root_element.render_in_html(html_div_to_render_in, other_parameters); // other_parameters is only needed when the root element is a connection element
-		}
+		root_element.render_in_html(discussion_context, html_div_to_render_in, other_parameters); // other_parameters is only needed when the root element is a connection element
 		
 		html_div_to_render_in.append($('<div></div>').addClass('divClear'));
 	};
@@ -81,44 +107,53 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 	//this is only ever called when we have a question_node as the root element.
-	CSD.views.render_node_as_question_format_in_html = function (the_question_node, html_div_to_render_in) {
-		//find all the answer nodes for this question node
-		var results = the_question_node.answer_connections_and_nodes_for_this_question();
-		//save time later and assign these values to the CSD.session.root_element
-		
-		//get the non_answer_connections to this question node
-		var non_answer_connections = results.non_answer_connections__to__this_element;
-		
-		//render the question
-		html_div_to_render_in.append(CSD.views.html_for_a_node(the_question_node));
-		
-		// render each non-answer connection to this node element that's in the current view
-		var non_answer_connections = CSD.views_manager.return_elements_in_view(non_answer_connections);
-		if (non_answer_connections.length > 0) {
-			non_answer_connections.shift().render_in_html(html_div_to_render_in, {array_of_remaining_sibling_vertical_connections: non_answer_connections});
-		}
-		
-		
-		//prepare discussion container for rendering views:
-		//  there are two routes to getting to this method call, route one, the user has made a 
-		//  direct request for a question_node, route two, the user has navigated here from a discussion chain
-		CSD.views.render_node_as_question_format_in_html.prepare_document();
-		
-		
-		//render a 'select answer discussion' box that contains the titles: '"Yes" answers', '"Don't know" answers', '"No" answers'
-		// under each heading put the list of statement elements that were linked with an answer connection 
-		// at this point answers."whatever" will contain all the answers irrespective of whether they're in view or not.
-		var jquery_answer_container = $('#pro_side_discussion_container').text('');
-		CSD.views.render_node_as_question_format_in_html.render_answers(results.answer_nodes.supporting, jquery_answer_container);
-		var jquery_answer_container = $('#dn_side_discussion_container').text('');
-		CSD.views.render_node_as_question_format_in_html.render_answers(results.answer_nodes.questioning, jquery_answer_container);
-		var jquery_answer_container = $('#anti_side_discussion_container').text('');
-		CSD.views.render_node_as_question_format_in_html.render_answers(results.answer_nodes.refuting, jquery_answer_container);
+	//CSD.views.render_node_as_question_format_in_html = function (the_question_node, html_div_to_render_in) {
+	//	//find all the answer nodes for this question node
+	//	var results = the_question_node.answer_connections_and_nodes_for_this_question();
+	//	//save time later and assign these values to the CSD.session.root_element
+	//	
+	//	//get the non_answer_connections to this question node
+	//	var non_answer_connections = results.non_answer_connections__to__this_element.elements;
+	//	
+	//	//render the question
+	//	html_div_to_render_in.append(CSD.views.html_for_a_node(the_question_node));
+	//	
+	//	// render each non-answer connection to this node element that's in the current view
+	//	var non_answer_connections = CSD.views_manager.return_elements_in_view(non_answer_connections);
+	//	if (non_answer_connections.length > 0) {
+	//		non_answer_connections.shift().render_in_html(html_div_to_render_in, {array_of_remaining_sibling_vertical_connections: non_answer_connections});
+	//	}
+	//	
+	//	
+	//	//prepare discussion container for rendering views:
+	//	//  there are two routes to getting to this method call, route one, the user has made a 
+	//	//  direct request for a question_node, route two, the user has navigated here from a discussion chain
+	//	CSD.views.prepare_document.for_rendering_a_question_and_its_answers();
+	//	
+	//	
+	//	//render a 'select answer discussion' box that contains the titles: '"Yes" answers', '"Don't know" answers', '"No" answers'
+	//	// under each heading put the list of statement elements that were linked with an answer connection 
+	//	// at this point answers."whatever" will contain all the answers irrespective of whether they're in view or not.
+	//	var jquery_answer_container = $('#pro_side_discussion_container').text('');
+	//	CSD.views.render_node_as_question_format_in_html.render_answers(results.answer_nodes.supporting, jquery_answer_container);
+	//	var jquery_answer_container = $('#dn_side_discussion_container').text('');
+	//	CSD.views.render_node_as_question_format_in_html.render_answers(results.answer_nodes.questioning, jquery_answer_container);
+	//	var jquery_answer_container = $('#anti_side_discussion_container').text('');
+	//	CSD.views.render_node_as_question_format_in_html.render_answers(results.answer_nodes.refuting, jquery_answer_container);
+	//};
+	
+	
+	
+	CSD.views.prepare_document = {};
+	CSD.views.prepare_document.for_rendering_a_general_discussion = function () {
+		$('#discussion_definition').text('');
+		$('#main_discussion_container').text('');
 	};
 	
-	
-	CSD.views.render_node_as_question_format_in_html.prepare_document = function () {
-		var discussion_container = $('#discussion_container').text('');
+	CSD.views.prepare_document.for_rendering_a_question_and_its_answers = function () {
+		$('#discussion_definition').text('');
+		
+		var discussion_container = $('#main_discussion_container').text('');
 		var html_discussion_side = function (id_name, content) {
 			return $('<div></div>').attr('id', id_name)
 								   .addClass('discussion_side')
@@ -130,7 +165,8 @@
 											   .attr('value', 'other answers');
 		};
 		var html_discussion_side_container = function (id_name) {
-			return $('<div></div>').attr('id', id_name);
+			return $('<div></div>').attr('id', id_name)
+									.addClass('discussion_container');
 		};
 		var padding_between_discussion_sides = function () {
 			return $('<div></div>').addClass('padding_between_discussion_sides');
@@ -160,73 +196,72 @@
 	
 	
 	
-	CSD.views.render_node_as_question_format_in_html.render_answers = function (answers, html_div_to_render_in) {
-		var i_all = 0, len_all = answers.elements.length;
-		var an_answer_node;
-		
-		// find which answers.elements are in the view.  
-		var answers_in_view = CSD.views_manager.return_elements_in_view(answers.elements);
-		var i_view = 0, len_view = answers_in_view.length;
-		
-		if (len_view === 0) {
-			//there are none in view, 
-			if (len_all !== 0) {
-				//but there are still answer elements
-				// for the moment , force rendering them, @TODO will eventually make them hide the whole discussion_side pane.
-				CSD.views_manager.add_elements(answers.ids);
-			} else {
-				//there are no answers at all
-				html_div_to_render_in.append('There are no proposed answers yet.');
-			}
-		} else if (len_view === 1) {
-			//there's one in view, so show this answer + 2 additional degrees of view
-			CSD.views.render_node_in_html(answers_in_view[0], html_div_to_render_in);
-			
+	CSD.views.render_multiple_answer_selection_html = function (discussion_context) {
+		//if this is being called, there should be no root_element_id for this view context
+		var context_data = CSD.session.view[discussion_context];
+		if (context_data.root_element_id) {
+			//fail
+			console.log('CSD.views.render_multiple_answer_selection_html  has been called with discussion_context = "' + discussion_context + '", but this already has a root_element_id of: "' + context_data.root_element_id + '" defined.')
 		} else {
-			// there are more that one answers in view, so loop through each of the answers and show them
-			for (i_all=0; i_all < len_all; i_all += 1) {
-				an_answer_node = answers.elements[i_all];
-				html_div_to_render_in.append(CSD.views.html_for_a_node(an_answer_node, undefined, {inner:' answer_node'}));
+			var html_div_to_render_in = $('#' + context_data.html_id_of_view_container);
+			var answer_ids = context_data.all_answer_ids;
+			var len_all = answer_ids.length;
+			if (len_all === 0) {
+				// no "other answers" available and not root element so offer the user to submit and answer
+				html_div_to_render_in.append('There are no proposed answers yet.');
+			} else {
+				// find which answers are in the view.  
+				var answers_in_view = CSD.views_manager.from_ids_return_elements_in_view(answer_ids, discussion_context);
+				var i_view = 0, len_view = answers_in_view.length;
+				if (len_view === 0) {
+					// there are answers to this question in this view context but we can't show the user any of them.
+					html_div_to_render_in.append('There are some proposed answers, please click the "other answers" button to see them.');
+				} else {
+					// there is more than one answer in the view, so loop through them and display them.
+					var an_answer_node;
+					for (i_view=0; i_view < len_view; i_view += 1) {
+						an_answer_node = answers_in_view[i_view];
+						html_div_to_render_in.append(CSD.views.html_for_a_node(an_answer_node, discussion_context, undefined, {middle:' answer_node'}));
+					}
+				}
 			}
 		}
-		
-		
-		
 	};
 	
 	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
-	CSD.views.render_node_in_html = function (the_node, html_div_to_render_in) {
+	CSD.views.render_node_in_html = function (the_node, discussion_context, html_div_to_render_in) {
 		var a_debug = the_node.id();
 		var connections_for_this_node;
 		var connections__to__this_node;
 		
 		if (the_node.element_type() === 'part') {
-			html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, the_node.text_part()));
+			html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, discussion_context, the_node.text_part()));
 			connections__to__this_node = the_node.connections__to__this_element();
 		} else {
-			html_div_to_render_in.append(CSD.views.html_for_a_node(the_node));
+			html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, discussion_context));
 			connections_for_this_node = the_node.connection_elements_for_this_node_and_its_parts();
 			connections__to__this_node = connections_for_this_node.connections__to__these_elements;
 		}
 		
 		
 		// render each connection to this node element that's in the current view
-		var connections_to_this_node_in_view_in_an_array = CSD.views_manager.return_elements_in_view(connections__to__this_node);
+		var connections_to_this_node_in_view_in_an_array = CSD.views_manager.return_elements_in_view(connections__to__this_node.elements, discussion_context);
 		if (connections_to_this_node_in_view_in_an_array.length > 0) {
-			connections_to_this_node_in_view_in_an_array.shift().render_in_html(html_div_to_render_in, {array_of_remaining_sibling_vertical_connections: connections_to_this_node_in_view_in_an_array});
+			connections_to_this_node_in_view_in_an_array.shift().render_in_html(discussion_context, html_div_to_render_in, {array_of_remaining_sibling_vertical_connections: connections_to_this_node_in_view_in_an_array});
 		}
 		
 	};
 	
 	
-	CSD.views.html_for_a_node = function (the_node, content_for_part_node, optional_css) {
+	CSD.views.html_for_a_node = function (the_node, discussion_context, content_for_part_node, optional_css) {
 		var a_debug = the_node.id();
 		
 		var the_content = content_for_part_node || the_node.content();
 		var css = optional_css || {};
 		css.inner = css.inner || '';
+		css.middle = css.middle || '';
 		css.outer = css.outer || '';
 	
 		
@@ -246,12 +281,18 @@
 		
 		inner_div_html = $('<div></div>')
 						.append(the_content)//CSD.views.html_for_statement_parts(the_node))
-						.attr('id', the_node.id())
 						.addClass('element_inner' + css.inner);
-		outer_div_html = $('<div></div>')
+						//.attr('element_id', the_node.id())
+						//.attr('discussion_context', discussion_context);
+		middle_div_html = $('<div></div>')
 						.append(inner_div_html)
+						.addClass('element_middle' + css.middle)
+						.attr('element_id', the_node.id())
+						.attr('discussion_context', discussion_context);
+		outer_div_html = $('<div></div>')
+						.append(middle_div_html)
 						.addClass('element_outer' + css.outer);
-		CSD.views.options_for_element(the_node, outer_div_html);
+		CSD.views.options_for_element(the_node, middle_div_html, discussion_context);
 		
 		return outer_div_html;
 	};
@@ -266,21 +307,21 @@
 	//};
 	
 	
-	CSD.views.html_for_a_horizontal_node = function (the_horizontal_node, html_div_to_render_in) {
+	CSD.views.html_for_a_horizontal_node = function (the_horizontal_node, discussion_context, html_div_to_render_in) {
 		var a_debug = the_horizontal_node.id();
 		
-		var is_for_horizontal_node = true,
-			horizontal_element_group_html;
+		var is_for_horizontal_node = true;
+		var horizontal_element_group_html;
 		
 		horizontal_element_group_html = CSD.views.html_for_an_element_group(is_for_horizontal_node);
-		the_horizontal_node.render_in_html(horizontal_element_group_html);
+		the_horizontal_node.render_in_html( discussion_context, horizontal_element_group_html);
 		html_div_to_render_in.append(horizontal_element_group_html);
 	};
 	
 	
 
 	
-	CSD.views.html_for_a_connection = function (the_connection, html_div_to_render_in, other_parameters) {
+	CSD.views.html_for_a_connection = function (the_connection, discussion_context, html_div_to_render_in, other_parameters) {
 		var a_debug = the_connection.id();
 		//connection is either:
 		// > known to connect to a node, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection'
@@ -288,43 +329,44 @@
 		// > known to connect to a horizontal connection, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection' without a corresponding 'the_horizontal_node'
 		// > is not known to connect to either node, or horizontal or vertical connection to so will be called with an empty array for 'array_of_remaining_sibling_vertical_connections' and will render as a vertical connection.
 		if (other_parameters.array_of_remaining_sibling_vertical_connections) {
-			CSD.views.html_for_a_vertical_connection(the_connection, html_div_to_render_in, other_parameters);
+			CSD.views.html_for_a_vertical_connection(the_connection, discussion_context, html_div_to_render_in, other_parameters);
 		} else {
 			var a_debug = the_connection.id();
-			CSD.views.html_for_a_horizontal_connection(the_connection, html_div_to_render_in);
+			CSD.views.html_for_a_horizontal_connection(the_connection, discussion_context, html_div_to_render_in);
 		}
 	};
 
 	
-	CSD.views.html_for_a_vertical_connection = function (the_connection, html_div_to_render_in, other_parameters) {
+	CSD.views.html_for_a_vertical_connection = function (the_connection, discussion_context, html_div_to_render_in, other_parameters) {
 		var a_debug = the_connection.id();
 		
-		var array_of_remaining_sibling_vertical_connections = other_parameters.array_of_remaining_sibling_vertical_connections,
-			the_horizontal_node = other_parameters.the_horizontal_node;
+		var array_of_remaining_sibling_vertical_connections = other_parameters.array_of_remaining_sibling_vertical_connections;
+		var the_horizontal_node = other_parameters.the_horizontal_node;
 		
-		var symbol_container_html,
-			vertical_connection_html,
-			element_group_html,
-			horizontal_element_group_html,
-			array_of_horizontal_connections,
-			i = 0, len,
-			id_of_next_potential_node,
-			next_node;
+		var symbol_container_html;
+		var vertical_connection_html;
+		var element_group_html;
+		var horizontal_element_group_html;
+		var array_of_horizontal_connections;
+		var i = 0, len;
+		var id_of_next_potential_node;
+		var next_node;
 		
-		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection);
+		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection, discussion_context);
 		vertical_connection_html = $('<div></div>').append(symbol_container_html).addClass('vertical_connection believed_true unanswered dispute');
 		
 		
 		//check if there are any more sibling vertical connections to render
 		if (array_of_remaining_sibling_vertical_connections.length > 0) {
 			element_group_html = CSD.views.html_for_an_element_group();
-			array_of_remaining_sibling_vertical_connections.shift().render_in_html(element_group_html, {array_of_remaining_sibling_vertical_connections: array_of_remaining_sibling_vertical_connections, the_horizontal_node: the_horizontal_node})
+			array_of_remaining_sibling_vertical_connections.shift().render_in_html( discussion_context, element_group_html, {array_of_remaining_sibling_vertical_connections: array_of_remaining_sibling_vertical_connections, 
+																															 the_horizontal_node: the_horizontal_node})
 			vertical_connection_html.append(element_group_html);
 
 		} else {
 			//check if there's the_horizontal_node to render
 			if (the_horizontal_node) {
-				CSD.views.html_for_a_horizontal_node(the_horizontal_node, vertical_connection_html);
+				CSD.views.html_for_a_horizontal_node(the_horizontal_node, discussion_context, vertical_connection_html);
 			}
 		}
 		html_div_to_render_in.append(vertical_connection_html);
@@ -333,19 +375,19 @@
 		
 		//check if there are any connections that connect to this vertical connection element
 		array_of_horizontal_connections = the_connection.connections__to__this_element();
-		array_of_horizontal_connections = CSD.views_manager.return_elements_in_view(array_of_horizontal_connections);
+		array_of_horizontal_connections = CSD.views_manager.return_elements_in_view(array_of_horizontal_connections.elements);
 		len = array_of_horizontal_connections.length;
 		for (i = 0; i < len; i += 1) {
-			array_of_horizontal_connections[i].render_in_html(vertical_connection_html);
+			array_of_horizontal_connections[i].render_in_html( discussion_context, vertical_connection_html);
 		};
 		
 		
 		//check if there are any nodes that this connection element connects from
 		id_of_next_potential_node = the_connection.connects_from();
-		if (CSD.views_data.to_display.contains(id_of_next_potential_node)) {
+		if (CSD.session.view[discussion_context].ids_in_view.contains(id_of_next_potential_node)) {
 			next_node = CSD.model.get_element_by_id(id_of_next_potential_node);
 			if (next_node) {
-				next_node.render_in_html(html_div_to_render_in);
+				next_node.render_in_html( discussion_context, html_div_to_render_in);
 			} else {
 				console.log("error.  Requested element node of id = '" + id_of_next_potential_node + "' but it's not available.  #in CSD.views.html_for_a_vertical_connection");
 			}
@@ -358,7 +400,7 @@
 	
 
 	
-	CSD.views.html_for_a_horizontal_connection = function (the_connection, html_div_to_render_in) {
+	CSD.views.html_for_a_horizontal_connection = function (the_connection, discussion_context, html_div_to_render_in) {
 		var a_debug = the_connection.id();
 		
 		var the_horizontal_node_id = the_connection.connects_from(),
@@ -370,27 +412,27 @@
 			vertical_element_group_html,
 			horizontal_element_group_html;
 		
-		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection, is_a_horizontal_connection_symbol);
+		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection, discussion_context, is_a_horizontal_connection_symbol);
 		horizontal_connection_html = $('<div></div>').append(symbol_container_html).addClass('horizontal_connection believed_false unanswered dispute');
 		
 		
 		//find if the horizontal node is in the elements to display
-		if (CSD.views_data.to_display.contains(the_horizontal_node_id)) {
+		if (CSD.session.view[discussion_context].ids_in_view.contains(the_horizontal_node_id)) {
 			the_horizontal_node = CSD.model.get_element_by_id(the_horizontal_node_id);
 		}
 		
 		//find which of the vertical connections to this horizontal connection is in the elements to display
-		vertical_connections_to_this_horizontal_connection = CSD.views_manager.return_elements_in_view(vertical_connections_to_this_horizontal_connection);
+		vertical_connections_to_this_horizontal_connection = CSD.views_manager.return_elements_in_view(vertical_connections_to_this_horizontal_connection.elements);
 		//render any vertical connections to this horizontal connection
 		if (vertical_connections_to_this_horizontal_connection.length > 0) {
 			vertical_element_group_html = CSD.views.html_for_an_element_group();
-			vertical_connections_to_this_horizontal_connection.shift().render_in_html(vertical_element_group_html, {array_of_remaining_sibling_vertical_connections: vertical_connections_to_this_horizontal_connection, 
-																											 		the_horizontal_node: the_horizontal_node});
+			vertical_connections_to_this_horizontal_connection.shift().render_in_html( discussion_context, vertical_element_group_html, {array_of_remaining_sibling_vertical_connections: vertical_connections_to_this_horizontal_connection, 
+																																		 the_horizontal_node: the_horizontal_node});
 			horizontal_connection_html.append(vertical_element_group_html);
 		} else {
 			//check if there's the_horizontal_node to render
 			if (the_horizontal_node) {
-				CSD.views.html_for_a_horizontal_node(the_horizontal_node, horizontal_connection_html);
+				CSD.views.html_for_a_horizontal_node(the_horizontal_node, discussion_context, horizontal_connection_html);
 			}
 		}
 		
@@ -401,7 +443,7 @@
 	
 	
 	
-	CSD.views.html_for_a_connection_symbol_container = function (the_connection, is_a_horizontal_connection_symbol) {
+	CSD.views.html_for_a_connection_symbol_container = function (the_connection, discussion_context, is_a_horizontal_connection_symbol) {
 		var a_debug = the_connection.id();
 		
 		is_a_horizontal_connection_symbol = is_a_horizontal_connection_symbol || false;
@@ -418,7 +460,7 @@
 		
 		symbol_html = $('<div></div>').append(connection_symbol).addClass('supports symbol');
 		line_html = $('<div></div>').append(symbol_html).addClass(connection_direction + '_line');
-		symbol_container_html = $('<div></div>').append(line_html).addClass('symbol_container').attr('id', the_connection.id());
+		symbol_container_html = $('<div></div>').append(line_html).addClass('symbol_container').attr('element_id', the_connection.id()).attr('discussion_context', discussion_context);
 		
 		return symbol_container_html;
 	}
@@ -437,43 +479,44 @@
 	
 	
 	
-	CSD.views.options_for_element = function(the_element_to_display, html_to_render_in) {
+	CSD.views.options_for_element = function(the_element_to_display, html_to_render_in, discussion_context) {
 		var the_element_id = the_element_to_display.id(),
 			connection_elements_for_this_element = the_element_to_display.connection_elements(),
-			connection_elements_connecting_from_this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections_from_this_element),
-			connection_elements_connecting__to__this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections__to__this_element),
+			connection_elements_connecting_from_this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections_from_this_element.elements, discussion_context ),
+			connection_elements_connecting__to__this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections__to__this_element.elements, discussion_context ),
 			options_div_html,
 			div_for_hide_element_option,
-			div_for_show_to_element_option = $('<div></div>').attr('id', the_element_id).addClass('show_to, option'),
-			div_for_show_from_element_option = $('<div></div>').attr('id', the_element_id).addClass('show_from, option');
+			div_for_show_to_element_option = $('<div></div>').attr('element_id', the_element_id).attr('discussion_context', discussion_context).addClass('show_to, option'),
+			div_for_show_from_element_option = $('<div></div>').attr('element_id', the_element_id).attr('discussion_context', discussion_context).addClass('show_from, option');
 		
-		options_div_html = $('<div></div>').addClass('element_options');	
+		//check there are any options to render in the first place
+		//	Test 1: are there 'connection_elements_connecting_from_this_element' and or 'connection_elements_connecting__to__this_element'?
+		if ((connection_elements_connecting_from_this_element.length > 0) || (connection_elements_connecting__to__this_element.length > 0)) {
+			options_div_html = $('<div></div>').addClass('element_options');	
 
-		//div_for_hide_element_option = $('<div></div>').append('hide')
-		//											  .attr('id', the_element_id)
-		//											  .addClass('hide_element, option');
-		
-		if (connection_elements_connecting_from_this_element.length < 1) {
-			div_for_show_to_element_option.css('display', 'none');
-		} else {
-			console.log(' need to implement selector box for when an element like this has multiple elements it links to  #in CSD.views.options_for_element');
-			div_for_show_to_element_option.append('to ' + connection_elements_connecting_from_this_element.length);
+			//div_for_hide_element_option = $('<div></div>').append('hide')
+			//											  .attr('id', the_element_id)
+			//											  .addClass('hide_element, option');
+			
+			if (connection_elements_connecting_from_this_element.length < 1) {
+				div_for_show_to_element_option.css('display', 'none');
+			} else {
+				console.log(' need to implement selector box for when an element like this has multiple elements it links to  #in CSD.views.options_for_element');
+				div_for_show_to_element_option.append('to ' + connection_elements_connecting_from_this_element.length);
+			}
+			if (connection_elements_connecting__to__this_element.length < 1) {
+				div_for_show_from_element_option.css('display', 'none');
+			} else {
+				div_for_show_from_element_option.append('from ' + connection_elements_connecting__to__this_element.length);
+			}	
+			
+			options_div_html.append(div_for_hide_element_option)
+							.append(div_for_show_to_element_option)
+							.append(div_for_show_from_element_option);
+							
+			html_to_render_in.append($('<div></div>').addClass('divClear'));
+			html_to_render_in.append(options_div_html);
 		}
-		if (connection_elements_connecting__to__this_element.length < 1) {
-			div_for_show_from_element_option.css('display', 'none');
-		} else {
-			div_for_show_from_element_option.append('from ' + connection_elements_connecting__to__this_element.length);
-		}	
-		
-		options_div_html.append(div_for_hide_element_option)
-						.append(div_for_show_to_element_option)
-						.append(div_for_show_from_element_option);
-		html_to_render_in.append(options_div_html);
-		
-		//html_options = html_options.concat(div_for_hide_element_option[0]);
-		//html_options = html_options.concat(div_for_show_to_element_option[0]);
-		//html_options = html_options.concat(div_for_show_from_element_option[0]);
-		//return html_options;
 	};
 	
 	
@@ -481,21 +524,6 @@
 //###############################    VIEWS (drawing selection boxes)       
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 	
-	CSD.views.recalculate_element_parts_for_draw_selections_method = function () {
-		CSD.session.clear_all_selections();
-		
-		//find any 'part' elements in CSD.views
-		var part_elements_in_view = CSD.views_manager.return_elements_that_are_parts_that_are_in_view();
-		var i = 0, len = part_elements_in_view.length;
-		var a_part_element;
-		var return_id_only = true;
-		
-		for (i=0; i < len; i += 1) {
-			a_part_element = part_elements_in_view[i];
-			CSD.session.save_selection(a_part_element.belonging_to_discussion_node(return_id_only), a_part_element.start(), a_part_element.end(), a_part_element.id(), 'discussion_node_part');
-		};
-		
-	};
 	
 	//highlight selected text with spans
 	CSD.views.draw_selections = function (a_specific_element_id) {
@@ -541,7 +569,7 @@
 		len = html_elements_with_selections.length;
 		for (i=0; i < len; i += 1) {
 			selection_components_for_one_element = CSD.session.save_selection.selections[html_elements_with_selections[i]];
-			jquery_element = $('#'+html_elements_with_selections[i]);
+			jquery_element = $('[element_id="' + html_elements_with_selections[i] + '"]').children('.element_inner');
 			this_divs_original_text = jquery_element.text();
 			//reset
 			number_of_selection_components_to_skip_in_loop = 0;
@@ -627,7 +655,7 @@
 					for (i_3=0; i_3 < len_3; i_3 += 1) {
 						span_ids.push(open_selections[i_3].span_id);
 					};
-					jquery_html_for_this_section = $('<span></span>').append(text_for_this_section).attr('multi_id', span_ids.join(' ')).addClass(open_selections[0].style);
+					jquery_html_for_this_section = $('<span></span>').append(text_for_this_section).attr('span_ids', span_ids.join(' ')).addClass(open_selections[0].style);
 					
 					html_sections.push(jquery_html_for_this_section);
 				} else {
@@ -659,7 +687,27 @@
 //############################### 
 //###############################    VIEWS HELPER       
 //############################### 
+	
+	
+	
+	CSD.views_helper.recalculate_element_parts_for_draw_selections_method = function (optional_discussion_context) {
+		CSD.session.clear_all_selections();
 		
+		//find any 'part' elements in CSD.views
+		var part_elements_in_view = CSD.views_manager.return_all_part_elements_in_view(optional_discussion_context);
+		var i = 0, len = part_elements_in_view.length;
+		var a_part_element;
+		var return_id_only = true;
+		
+		for (i=0; i < len; i += 1) {
+			a_part_element = part_elements_in_view[i];
+			CSD.session.save_selection(a_part_element.belonging_to_discussion_node(return_id_only), a_part_element.start(), a_part_element.end(), a_part_element.id(), 'discussion_node_part');
+		};
+		
+	};
+	
+	
+	
 	CSD.views_helper.find_root_element_to_display = function (array_of_element_ids_in_view) {
 		// go through array of element_ids and pull out each element in turn.
 		//	Record each element that has no iel_links to any other elements in the 

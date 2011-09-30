@@ -10,18 +10,21 @@ div.element_outer {
     position: relative; /*needed for z-index to work.*/
 	background-color: white; /*needed for the horizontal element-outers to block their horizontal connection symbols from view*/
 }
-div.element_outer > div.element_inner {
-	word-wrap: break-word;
+div.element_middle {
 	background-color: white;
-    border: 1px solid #A9A9A9;
-	padding: 0 5px;
-	display:inline-block; /*shrinks div to fit text */
+	border: 1px solid #A9A9A9;
 	border-radius: 2px;
+	display: inline-block;
+}
+div.element_inner {
+	word-wrap: break-word;
+	padding: 0 5px;
+    display:inline-block; /*shrinks div to fit text */
 }
 
 
 div.answer_node {
-	margin: 20px 0 0;
+	margin: 0 0 20px;
 }
 
 
@@ -251,31 +254,17 @@ div.dispute.unanswered > div.symbol_container {
 
 
 /*  on hover  */
-div.vertical_connection > div.symbol_container:hover, 
+/*div.vertical_connection > div.symbol_container:hover, 
 div.horizontal_connection > div.symbol_container:hover,
 div.element_outer > div.element_inner:hover {
     background-color: #ff0;
+}*/
+div.vertical_connection > div.symbol_container:hover, 
+div.horizontal_connection > div.symbol_container:hover,
+div.element_middle:hover {
+    background-color: #ff0;
 }
 
-
-/* element options */
-.element_options{
-	display:inline-block;
-	padding:1px;
-}
-.option {
-	display:inline-block;
-	padding: 0 3px;
-	margin: -1px 1px;
-	border-radius:3px;
-	border:thin solid #E6E6E6;
-	color: #868686;
-}
-.option:hover {
-	color: #000000;
-	border:thin solid #999999;
-	background-color: #dfeeff;
-}
 
 
 /* selected / highlight text within element node */

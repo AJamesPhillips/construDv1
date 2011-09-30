@@ -44,7 +44,7 @@ class Element < ActiveRecord::Base
   end
   
   
-  def is_question_node?
+  def is_a_question_node?
     (element_type == 'node' && subtype == 'question')
   end
   

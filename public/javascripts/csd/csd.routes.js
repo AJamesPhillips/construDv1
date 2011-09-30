@@ -7,7 +7,7 @@
 
 
 //with editing enabled:
-//left mouse_down on element selects it (stores it in the CSD.session.selected_element_html_id)
+//left mouse_down on element selects it (stores it in the CSD.session.selected_element_html)
 //left mouse_up (any where in document): we get any selected text
 //		if length of selected text === 0  don't do anything
 //		otherwise, select all the appropriate text within the mouse_DOWN element div and stores it (for the moment) in the CSD.session.save_selection
@@ -27,61 +27,49 @@
 	
 	CSD.routes.refresh = function () {
 		CSD.routes.add_element_click_handlers();
+		CSD.routes.add_elements__show_other_connections__option_handlers();
 	};
 
 	// add onClick handlers for the elements
 	CSD.routes.add_element_click_handlers = function () {
 	    
-		$(".element_inner, .symbol_container").bind('mousedown.CSD', function (e) {
-			CSD.session.selected_element_html_id(this);
-			
+	    var helper = function (jquery_of_clicked_html) {
 			if (!CSD.session.editing) {
-				var the_element = CSD.model.get_element_by_id(CSD.session.selected_element_html_id());
+				var clicked_element = CSD.session.selected_element_html();
+				var the_element = CSD.model.get_element_by_id(clicked_element.id);
+				var the_discussion_context = clicked_element.context;
 				var element_type = the_element.element_type();
 				var subtype = the_element.subtype();
 				
 				if (element_type === 'node') {
 					
-					if ($(this).hasClass('answer_node')) {
-						CSD.controller.element.node.answer.left_mouse_down(the_element);
+					if (jquery_of_clicked_html.hasClass('answer_node')) {
+						CSD.controller.element.node.answer.left_mouse_down(the_element, the_discussion_context);
 					} else {
-						CSD.controller.element.left_mouse_down(the_element);
+						CSD.controller.element.left_mouse_down(the_element, the_discussion_context);
 					}
 				} else {
-					CSD.controller.element.left_mouse_down(the_element);
+					CSD.controller.element.left_mouse_down(the_element, the_discussion_context);
 				}
 				
 				
 			} else {
 				//ignore this interaction by the user
 			}
+	    };
+	    
+	    
+	    //$(".element_middle").bind('mousedown.CSD', function (e) {
+		//	CSD.session.selected_element_html($(this).children('.element_inner'));
+		//	helper();
+		//});
+	    
+	    
+		$(".element_middle, .symbol_container").bind('mousedown.CSD', function (e) {
+			var jquery_of_clicked_html = $(this);
+			CSD.session.selected_element_html(jquery_of_clicked_html);
+			helper(jquery_of_clicked_html);
 		});
-		
-		
-		
-		//$('.element_inner, .symbol_container').bind('mouseup.CSD', function (event1, ui) {
-	    //	var element_id = this.id;
-	    //	var the_element = CSD.model.get_element_by_id(element_id);
-	    //	var the_selection = undefined;
-	    //		
-		//    switch (event1.which) {
-		//        case 1:
-		//            //Left mouse button pressed on a discussion element.
-//		//            CSD.controller.selection_occured();
-		//            CSD.controller.element.left_mouse_up(the_element);
-		//            event1.stopPropagation();
-		//            break;
-		//        case 2: //Middle mouse button pressed
-		//            break;
-		//        case 3: //Right mouse button pressed on a discussion element.
-		//        		//	select this discussion element and allow event to propagate to 
-		//        		//	the discussion container where it will trigger creating a new discussion element
-		//        		
-		//            break;
-		//        default: //You have a strange mouse
-		//    }
-	    //});
-
 	};
 	
 	
@@ -98,17 +86,32 @@
 	};
 	
 	
+	CSD.routes.add_elements__show_other_connections__option_handlers = function () {
+		$(".element_options.show_from").bind('mousedown.CSD', function (e) {
+			//e.stopPropagation();
+			//CSD.session.selected_element_html($(this).closest('.element_middle'));
+			// @TODO implement adding only parts of and or connections_from this element
+		});
+		$(".element_options.show_to").bind('mousedown.CSD', function (e) {
+			//e.stopPropagation();
+			//CSD.session.selected_element_html($(this).closest('.element_middle'));
+			// @TODO implement adding only parts of and or connections_to this element
+		});
+	};
+	
+	
 	// add onClick handlers for the discussion container
 	CSD.routes.add_discussion_container_handlers = function () {
 		//$(document).bind('mouseup', function () {
 
 		//});
-			
-	    $('#discussion_container').bind('mouseup.CSD', function(event2) {
+		
+		//register mouse up for when the user is selecting text
+	    $('#main_discussion_container, #discussion_definition').bind('mouseup.CSD', function(event2) {
 			event2.stopPropagation();
 		    switch (event2.which) {
 		        case 1: //Left mouse button pressed
-					var selected_element_html_id = CSD.session.selected_element_html_id();
+					var selected_element_html_id = CSD.session.selected_element_html().id;
 					//check that user is in editing mode and had clicked on valid element
 					if (CSD.session.editing && selected_element_html_id) {
 						//find the text selected by the user
@@ -144,13 +147,15 @@
 		//because range_object has startContainer set to the mouse_up element of a reverse selection as opposed to the mouse_down element, 
 		// we need to test that the start container has the same id as the CSD.session.selected_element_html_id()
 		// if not, then we'll choose the range_object.endContainer as the value for the_mousedown_node
-		if (CSD.session.selected_element_html_id() !== $(the_mousedown_node).closest('.element').attr('id')) {
+		if (CSD.session.selected_element_html().id !== $(the_mousedown_node).closest('.element_middle').attr('element_id')) {
 			the_mousedown_node = range_object.endContainer;
 			the_mousedown_node_startOffset = range_object.endOffset
 		}
 		
 		//get all the textNode children in the mouse down div.
-		var text_nodes_in_selected_html_element = AJP.u.get_text_nodes_in(document.getElementById(id_of_mousedown_element));
+		var the_jquery_mousedown_div = $('[element_id="' + id_of_mousedown_element + '"]').children('.element_inner');
+		var the_mousedown_div = the_jquery_mousedown_div.get(0);
+		var text_nodes_in_selected_html_element = AJP.u.get_text_nodes_in(the_mousedown_div);
 
 		//now go down through textNode children of div.element that had the mousedown, adding the 
 		// lengths of the textNodes until, you reach the_mousedown_node
@@ -163,16 +168,14 @@
 		length_of_text_to_range_start_offset += the_mousedown_node_startOffset;
 		
 		
-		//var startNode = range_object.startContainer.childNodes[range_object.startOffset] || range_object.startContainer;
-		
+		//remove any whitespace line breaks or carriage from the selected text (otherwise these characters count towards the length of the selected text):
 		var selected_text_string = user_selection.toString().replace(/\n/,'', 'g').replace(/\r/,'', 'g');
+		//
 		var length_of_raw_selection = selected_text_string.length;
-		var the_mousedown_div = $('#'+id_of_mousedown_element);
-		var clicked_div_text = the_mousedown_div.text();
-		//var clicked_div_html = the_mousedown_div.html();
+		var clicked_div_text = the_jquery_mousedown_div.text();
 		var max_length_of_selection_within_an_element = clicked_div_text.length;
 		
-		//check there's been a selection or just a mouse click
+		//check that there has been a selection and not just a mouse click
 		if (length_of_raw_selection > 0) {
 			var starting_point = length_of_text_to_range_start_offset;
 			var length_to_take_from_selection;
@@ -225,7 +228,7 @@
 				} else {
 					//the user has likely started selection at the end of an element and gone forwards.
 					//  it has failed the (part_of_div_text_to_test !== '') test 
-					//  but we'll now avoid taking text backwards from the start point in the_mousedown_div, which would be nonsense.
+					//  but we'll now avoid taking text backwards from the start point in the_jquery_mousedown_div, which would be nonsense.
 					direction_of_selection_is_forward = true;
 					length_to_take_from_selection = 0;
 				}
@@ -251,7 +254,7 @@
 		} else {
 			//just treat this as a mouse click and just
 			//store the id of the selected element
-			//// CSD.session.selected_element_html_id(this);
+			//// CSD.session.selected_element_html(this);
 			//// $('#selected_text').text(id_of_mousedown_element);
 		}
 		

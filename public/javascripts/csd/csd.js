@@ -9,18 +9,17 @@
     			views: {},
     			views_helper: {},
     			views_manager: {},
-    			views_data: {to_display: [],
-    						 rendered: []},
     			controller: {element: {}},
     						 //discussion_container: {}},
     			routes: {helper: {}},
     			session: {},
-    			helper: {}
+    			helper: {},
+    			debugging: {}
     			};
     	CSD.dm = CSD.data_manager; 	// set alias for data_manager as dm
     	CSD.rh = CSD.routes.helper;	// set alias for routes.helper as rh
     };
     
 
-
+	CSD.debugging.attempts_to_run_CSD_controller_display_discussion = 0;
 

@@ -1,13 +1,14 @@
 <div id="discussion_options">
 	<input id="edit_discussion" class="option_button" type="submit" value="edit" />
-	<input id="copy_link_to_current_discussion" class="option_button" type="submit" value="copy link" />
+	<input id="copy_link_to_current_discussion" class="option_button" type="submit" value="copy link" onclick="alert('Functionality to build');" />
+	<input id="hide_to_and_from_links" class="option_button" type="submit" value="hide to / from" onclick="alert('Functionality to build');" />
 </div>
 <div class="divClear"></div>
 <div id="discussion_definition" >
 	Discussion defintion goes here (when there is a question element as the root)
 </div>
 <div class="divClear"></div>
-<div id="discussion_container">
+<div id="main_discussion_container">
 	<!--div id="pro_side" class="discussion_side">Yes because...
 		<input id="show_other_pro_answers" class="option_button" type="submit" value="show 3 others" />
 		<div id="pro_side_discussion_container">
@@ -33,7 +34,13 @@
 	<script id="csd_data">
 		$(document).ready( function () {
 			CSD.data_manager.add_data(<%= prepared_data %>);
-			CSD.views_manager.add_elements(<%= @array_of_ids.to_json.html_safe %>); //[1,5,7,14,13,15,16,17,19,20,21,2,4]
+			<% if @root_element.is_a_question_node? %>
+				CSD.views_manager.set_view_as_question(<%= @root_element_id %>);
+			<% else %>
+				CSD.views_manager.set_view_as_general(<%= @root_element_id %>);
+			<% end %>
+			//CSD.views_manager.set_view(<%= @session_view.to_json.html_safe %>);
+			//CSD.views_manager.add_elements(<%= @array_of_ids.to_json.html_safe %>); //[1,5,7,14,13,15,16,17,19,20,21,2,4]
 			CSD.controller.display_discussion();
 		});
 	</script>

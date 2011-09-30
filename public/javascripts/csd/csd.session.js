@@ -10,8 +10,6 @@
 	CSD.session.editing = false;
 	
 	
-	CSD.session.root_element = undefined;
-	
 	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 //###############################    SESSION (selections)       
@@ -19,19 +17,23 @@
 	
 	
 	//store, retrieve and destroy record of current selected discussion element
-	CSD.session.selected_element_html_id = function (the_selected_html_element_not_a_jquery_object) {
-		var the_selected_element = the_selected_html_element_not_a_jquery_object;
-		if (the_selected_element) {
-			if (the_selected_element.id) {
-				CSD.session.selected_element_html_id.element_html_id = the_selected_element.id;
+	CSD.session.selected_element_html = function (jquery_object_of_the_selected_html_element) {
+		if (jquery_object_of_the_selected_html_element) {
+			var selected_element_id = jquery_object_of_the_selected_html_element.attr('element_id');
+			var selected_element_context = jquery_object_of_the_selected_html_element.attr('discussion_context');
+			
+			if ((selected_element_id) && (selected_element_context)) {
+				CSD.session.selected_element_html.element_html_id = selected_element_id;
+				CSD.session.selected_element_html.element_context = selected_element_context;
 			} else {
-				console.log("incorrect parameter for CSD.session.selected_element_html_id.  Was expecting a discussion element object with .id() method but got: '" + the_selected_element + "' which has a typeof= '" + (typeof the_selected_element) + "'");
+				console.log("incorrect parameter for CSD.session.selected_element_html.  Was expecting a discussion element object with and 'element_id' attribute but got: '" + jquery_object_of_the_selected_html_element + "' which has a typeof= '" + (typeof jquery_object_of_the_selected_html_element) + "'");
 			}
 				
-		} else if (the_selected_element === false) {
-			CSD.session.selected_element_html_id.element_html_id = undefined;
+		} else if (jquery_object_of_the_selected_html_element === false) {
+			CSD.session.selected_element_html.element_html_id = undefined;
+			CSD.session.selected_element_html.element_context = undefined;
 		} else {
-			return CSD.session.selected_element_html_id.element_html_id;
+			return {id: CSD.session.selected_element_html.element_html_id, context: CSD.session.selected_element_html.element_context};
 		}
 	};
 	

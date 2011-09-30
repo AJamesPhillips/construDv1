@@ -10,8 +10,7 @@
 
 
 
-#discussion_container {
-	padding: 0 20px;
+#main_discussion_container {
 }
 
 #discussion_options, #discussion_definition {
@@ -37,12 +36,17 @@
 .discussion_side {
 	margin: 20px 0 0;
 	float: left;
-	width: 30%;
+	/*width: 29.9%;*/
+	background-color: #fafaff;
+	padding: 10px;
+	border-radius: 4px;
+	width: 29.7%;
+	border: thin solid #e5e5ef;
 }
 .padding_between_discussion_sides {
 	float: left;
-	margin: 0 20px;
-	height: 1px;
+	margin: 0 10px;
+	height: 30px;
 }
 
 .discussion_side_heading h4 {
@@ -52,6 +56,11 @@
 .side_specific_definition {
 	font-style: italic; 
 }
+
+.discussion_container {
+	margin: 20px 0 0;
+}
+
 
 
 #author_and_critic {
@@ -75,3 +84,23 @@
 	background-color: #ccddff;
 }
 
+
+/* element options */
+.element_options{
+	padding:1px;
+	display: inline-block;
+	background-color: #fafaff;
+}
+.option {
+	padding: 0 3px;
+	margin: -1px 1px;
+	border-radius:3px;
+	border:thin solid #E6E6E6;
+	color: #868686;
+	display: inline-block;
+}
+.option:hover {
+	color: #000000;
+	border:thin solid #999999;
+	background-color: #dfeeff;
+}

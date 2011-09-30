@@ -67,6 +67,29 @@ class ElementsController < ApplicationController
   
   
   def show
+    ## initial check for if it's a json or html request.
+    ## if html request, then save root_element as the element requested
+    if request.format == 'text/html'
+      ##check there's only one id being requested:
+      if !(params[:id].include? ',')
+        @root_element_id = params[:id].to_i
+        #d# 
+        logger.debug ">>>  @root_element_id = #{@root_element_id}  # in show of elements_controller"
+        @root_element = Element.find(@root_element_id)
+        
+        ##quickly test that this isn't a request for a question element, else modify the request to have 6 degrees of view
+        if @root_element.is_a_question_node?
+          params[:id] = @root_element_id.to_s + '-6';
+        end
+        #d# 
+        logger.debug ">>>  params[:id] = #{params[:id]}  # in show of elements_controller"
+      end
+    end
+    
+    
+    
+
+    
     ## @TODO SO BAD.. Absolutely Bags of room here for optimising this...(I hope).  I think this needs to have more SELECT IN  SQL queries, though see how it's currently being implemented... I suspect it will be as many separate SELECT queries.
     ## @TODO check for security holes, what if someone puts something crazy as an element id, it will be taken as a strong and converted into a symbol that's latter used to find elements_by_id
     
@@ -101,13 +124,7 @@ class ElementsController < ApplicationController
     #d# 
     logger.debug ">>>  @element_ids = #{@element_ids}  # in show of elements_controller"
     
-    ##quickly test that this isn't a request for a question element, else modify the request to have 6 degrees of view
-    if @element_ids.length == 1
-      element_id = @element_ids.keys[0]
-      if Element.find(element_id).is_question_node?
-        @element_ids[element_id] = 6;
-      end
-    end
+
     
     
     ##now go through each element_id (the keys) of @element_ids and loop over, collecting their iel_linked elements
