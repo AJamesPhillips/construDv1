@@ -14,9 +14,13 @@
 
 
 class Element < ActiveRecord::Base
+  attr_accessible :element_type, :subtype, :content, :user_id, :archived, :public
+  
+  
   belongs_to :user
   has_many :inter_element_links1, :foreign_key => 'element1_id', :class_name => 'InterElementLink', :dependent => :destroy
   has_many :inter_element_links2, :foreign_key => 'element2_id', :class_name => 'InterElementLink', :dependent => :destroy
+  has_many :belief_states
   #has_many :elements1, :through => :inter_element_links1#, :source => 'element'
   #has_many :elements2, :through => :inter_element_links2#, :source => 'element'
   

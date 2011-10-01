@@ -67,6 +67,11 @@ class ElementsController < ApplicationController
   
   
   def show
+    ## remove any author ids from the request, e.g. takes params[:id] = "3-0,1-4authors=5,4"  and returns params[:id] = "3-0,1-4"  and  @author_ids = [5,4]
+    @author_ids = params[:id].slice!(/authors=(.)*/)
+    @author_ids = @author_ids.sub(/authors=/,'').split(',') unless @author_ids.nil?
+    
+    
     ## initial check for if it's a json or html request.
     ## if html request, then save root_element as the element requested
     if request.format == 'text/html'
@@ -146,8 +151,8 @@ class ElementsController < ApplicationController
       
       logger.debug ">>>  elements = #{elements.map {|element| element.id }}  # in show of elements_controller"
       logger.debug ">>>  @elements = #{@elements.map {|element| element.id }}  # in show of elements_controller"
-      logger.debug ">>>  inter_element_links = #{inter_element_links.map {|iel_link| "#{iel_link.element1_id} #{iel_link.element2_id}"}}  # in show of elements_controller"
-      logger.debug ">>>  @element_links = #{@element_links.map {|iel_link| "#{iel_link.element1_id} #{iel_link.element2_id}"}}  # in show of elements_controller"
+      logger.debug ">>>  inter_element_links = #{inter_element_links.map {|iel_link| "#{iel_link.element1_id} - #{iel_link.element2_id}, "}}  # in show of elements_controller"
+      logger.debug ">>>  @element_links = #{@element_links.map {|iel_link| "#{iel_link.element1_id} - #{iel_link.element2_id}, "}}  # in show of elements_controller"
       
       @elements.concat elements
       @elements.uniq!
@@ -164,6 +169,13 @@ class ElementsController < ApplicationController
     
     @array_of_ids = @elements.map {|element| element.id }
     logger.debug ">>>  @array_of_ids = #{@array_of_ids}  # in show of elements_controller"
+    
+    
+    
+    ## get the believed truth states for each discussion element
+    @belief_states = BeliefStates.find_all_by_user_id_and_element_id(@author_ids, @array_of_ids) unless (@author_ids.empty? || @array_of_ids.empty?)
+    @belief_states = BeliefStates.find_all_by_element_id(@array_of_ids) unless @array_of_ids.empty?
+    
     
     
     respond_to do |format|

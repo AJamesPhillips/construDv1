@@ -24,6 +24,8 @@ class User < ActiveRecord::Base
   ## Because of this danger, it is a good practice to define attr_accessible for every model.
 
   has_many :elements
+  has_many :belief_states
+  
 =begin  
   has_many :microposts,            :dependent => :destroy
   has_many :relationships,         :foreign_key => "follower_id", 
