@@ -75,8 +75,7 @@
 	
 	CSD.routes.add__edit_discussion__button_handlers = function () {
 		$("#edit_discussion").bind('mousedown.CSD', function (e) {
-			CSD.session.editing = !CSD.session.editing;
-			CSD.views.update_editing_button();
+			CSD.controller.option.edit_discussion.left_mouse_down();
 		});
 	
 		$("#edit_discussion").bind('mouseup.CSD', function (e) {
@@ -87,15 +86,18 @@
 	
 	
 	CSD.routes.add_elements__show_other_connections__option_handlers = function () {
-		$(".element_options.show_from").bind('mousedown.CSD', function (e) {
+		$(".option.show_from").bind('mousedown.CSD', function (e) {
 			//e.stopPropagation();
 			//CSD.session.selected_element_html($(this).closest('.element_middle'));
 			// @TODO implement adding only parts of and or connections_from this element
+			alert('Feature not implemented yet');
 		});
-		$(".element_options.show_to").bind('mousedown.CSD', function (e) {
+		
+		$(".option.show_to").bind('mousedown.CSD', function (e) {
 			//e.stopPropagation();
 			//CSD.session.selected_element_html($(this).closest('.element_middle'));
 			// @TODO implement adding only parts of and or connections_to this element
+			alert('Feature not implemented yet');
 		});
 	};
 	

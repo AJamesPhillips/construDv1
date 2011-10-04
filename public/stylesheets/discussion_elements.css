@@ -75,14 +75,12 @@ div.vertical_connection > div.symbol_container {
 	left: -5px;
 }
 
-div.vertical_connection.dispute > div.symbol_container {
-    border-right: thin solid; 
-    border-left: thin solid;
+div.vertical_connection > div.symbol_container {
+    border-right: thin solid transparent; 
+    border-left: thin solid transparent;
     width: 13px;
 }
-div.dispute > div.symbol_container { /*, div.dispute > div.symbol_container > div > div.symbol {*/
-	background-color: #fdd;
-}
+
 div.symbol_container > div, div.symbol_container > div > div.symbol {
 	background-color: inherit;
 }
@@ -152,25 +150,13 @@ div.horizontal_connection > div.symbol_container > div > div.symbol {
 	left: 0px;
 }
 
-div.horizontal_connection.dispute > div.symbol_container {
-    border-top: thin solid; 
-    border-bottom: thin solid;
+div.horizontal_connection > div.symbol_container {
+    border-top: thin solid transparent; 
+    border-bottom: thin solid transparent;
     height: 13px;
 }
 
 
-
-
-
-/*
-div.horizontal_connection.hovered {
-    border-top: medium dotted;
-    margin: 38px 0 5px -6px; 
-}*/
-/*
-div.horizontal_connection + div.horizontal_connection.hovered {
-    margin-top: 18px;
-}*/
 
 
 
@@ -192,38 +178,27 @@ div.vertical_connection > div.symbol_container > div > div.supports {
 }
 
 
-/*
-div.horizontal_connection > div.supports.symbol_container {
-	float:left;
-    margin: -9px -20px 0 -2px; /* the -20px from the right is to make it always flow properly.* /
-}*/
 
 
 div.refutes {
 	font-family: Helvetica, sans-serif;
 	font-size: 0.9em;
-}/*
-div.vertical_connection > div.refutes.symbol_container {
-    margin: 0px -20px 0 -5px;
-    line-height:0.95em;
-}*/
-
+}
 
 div.questions {
     font-size: 1.2em;
 }
 
-/*
-div.vertical_connection > div.questions.symbol_container {
-    margin: -2px -20px 0 -4px;
-    line-height:0.95em;
-}*/
 div.horizontal_connection > div.symbol_container > div > div.questions {
 	margin: -4px 0 0 0;
 	padding: 0 1px 0 1px;
 }
 
 
+
+
+/* BELIEVED STATES */
+/* believed states for connections */
 
 div.believed_true > div.symbol_container > div {
     color: #66CC00;
@@ -239,26 +214,70 @@ div.unsure > div.symbol_container > div {
     color: #FA3;
     border-color: #FA3;
 }
-
+div.dispute > div.symbol_container {
+    border-color: red;
+    background-color: #fdd;
+}
+/*
 div.dispute.answered > div.symbol_container {
     border-color: purple;
 }
 div.dispute.unanswered > div.symbol_container {
     border-color: red;
+    background-color: #fdd;
+}*/
+
+
+/* believed states for nodes */
+
+div.element_middle.believed_true {
+	background-color: #cfb;
+}
+	div.element_middle.believed_true.many {
+		background-color: #af9;
+	}
+	div.element_middle.believed_true.consensus {
+		background-color: #8f6;
+	}
+div.element_middle.believed_false {
+	background-color: #bcf;
+}
+	div.element_middle.believed_false.many {
+		background-color: #9bf;
+	}
+	div.element_middle.believed_false.consensus {
+		background-color: #58f;
+	}
+div.element_middle.unsure {
+	background-color: #ddb;
+}
+	div.element_middle.unsure.many {
+		background-color: #dd8;
+	}
+	div.element_middle.unsure.consensus {
+		background-color: #fc6;
+	}
+/*
+div.element_middle.dispute.answered {
+	background-color: #ecf;
+}
+div.element_middle.dispute.unanswered {
+	background-color: #fdd;
+}
+	div.element_middle.dispute.unanswered.many {
+		background-color: #cfb;
+	}
+	div.element_middle.dispute.unanswered.consensus {
+		background-color: #cfb;
+	}*/
+div.element_middle.dispute {
+	background-color: #fdd;
 }
 
 
 
+/* on hover highlighting */
 
-
-
-
-/*  on hover  */
-/*div.vertical_connection > div.symbol_container:hover, 
-div.horizontal_connection > div.symbol_container:hover,
-div.element_outer > div.element_inner:hover {
-    background-color: #ff0;
-}*/
 div.vertical_connection > div.symbol_container:hover, 
 div.horizontal_connection > div.symbol_container:hover,
 div.element_middle:hover {

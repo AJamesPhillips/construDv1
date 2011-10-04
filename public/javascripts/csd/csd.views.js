@@ -6,18 +6,19 @@
 //###############################    
 
 	//   render argument elements in html using divs and jQuery
-	CSD.views.show_view = function (discussion_context) {
+	CSD.views.show_view = function (discussion_layout_type_or_view_context) {
 		CSD.views_helper.recalculate_element_parts_for_draw_selections_method(); // needs to be before CSD.views.render_discussion_html(); so that 'if (content_for_part_node) { save_selection' works properly in 'CSD.views.html_for_a_node'  
-		if (discussion_context === 'general') {
+		if (discussion_layout_type_or_view_context === 'as_general') {
 			CSD.views.prepare_document.for_rendering_a_general_discussion();
 			CSD.routes.setup();
+			var discussion_context = 'general';
 			CSD.views.render_discussion_html(discussion_context);
-			
-		} else if (discussion_context === 'question') {
+		} else if (discussion_layout_type_or_view_context === 'as_question') {
 			CSD.views.prepare_document.for_rendering_a_question_and_its_answers();
 			CSD.routes.setup();
+			var discussion_context = 'question';
 			CSD.views.render_discussion_html(discussion_context);
-			
+
 			//now render the argument sides
 				//n.b. for pro, dn and anti, 
 				//  if root_element_id === undefined, and all_answer_ids === [], there is no know answer for the question posed
@@ -37,19 +38,20 @@
 				CSD.views.show_view.show_a_side(side);
 			};
 			
-		} else if (CSD.views_manager.answer_discussion_contexts().contains(discussion_context)) {
-			CSD.views.show_view.show_a_side(discussion_context);
+		} else if (CSD.views_manager.all_discussion_contexts().contains(discussion_layout_type_or_view_context)) {
+			CSD.views.show_view.show_a_side(discussion_layout_type_or_view_context);
 		} else {
-			console.log('error, discussion_context = "' + discussion_context + '"  #in CSD.views.show_view');
+			console.log('error, discussion_layout_type_or_view_context = "' + discussion_layout_type_or_view_context + '"  #in CSD.views.show_view');
 		}
 		
 		CSD.routes.refresh();
 		CSD.views.draw_selections();
 	};
 	
+	
 	CSD.views.show_view.show_a_side = function (discussion_context) {
 		var context_data = CSD.session.view[discussion_context];
-		var root_element_id = context_data.root_element_id;
+		var root_element_id = context_data.root_element_id();
 		var number_of_other_answers;
 
 		if (root_element_id) {
@@ -63,14 +65,32 @@
 			}
 		}
 	};
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   Editing options
 	
 	
-	
-	CSD.views.update_editing_button = function () {
-		if (CSD.session.editing) {
-			$('#edit_discussion').attr('value','stop editing').addClass('option_enabled');
+	CSD.views.options = {editing_button: {},
+						 editing_panel:  {}};
+						 
+	CSD.views.options.editing_button.update = function (currently_editing) {
+		var jquery_of_edit_button = $('#edit_discussion');
+		
+		if (currently_editing) {
+			jquery_of_edit_button.attr('value','stop editing').addClass('option_enabled');
 		} else {
-			$('#edit_discussion').attr('value','edit').removeClass('option_enabled');
+			jquery_of_edit_button.attr('value','edit').removeClass('option_enabled');
+		}
+	};
+	
+	
+	CSD.views.options.editing_panel.visibilty = function (show_panel) {
+		var jquery_of_editing_panel = $('#editing_panel');
+		
+		if (show_panel) {
+			jquery_of_editing_panel.attr('style','display: block;');
+		} else {
+			jquery_of_editing_panel.attr('style','display: none;');
 		}
 	};
 
@@ -84,7 +104,7 @@
 		var element_id_it_connects_to;
 		var element_it_connects_to;
 		var other_parameters = {};
-		var root_element_id = context_data.root_element_id;
+		var root_element_id = context_data.root_element_id();
 		var root_element = CSD.model.get_element_by_id(root_element_id);
 		var html_div_to_render_in = $('#' + context_data.html_id_of_view_container).text('');
 		
@@ -199,12 +219,12 @@
 	CSD.views.render_multiple_answer_selection_html = function (discussion_context) {
 		//if this is being called, there should be no root_element_id for this view context
 		var context_data = CSD.session.view[discussion_context];
-		if (context_data.root_element_id) {
+		if (context_data.root_element_id()) {
 			//fail
-			console.log('CSD.views.render_multiple_answer_selection_html  has been called with discussion_context = "' + discussion_context + '", but this already has a root_element_id of: "' + context_data.root_element_id + '" defined.')
+			console.log('CSD.views.render_multiple_answer_selection_html  has been called with discussion_context = "' + discussion_context + '", but this already has a root_element_id of: "' + context_data.root_element_id() + '" defined.')
 		} else {
 			var html_div_to_render_in = $('#' + context_data.html_id_of_view_container);
-			var answer_ids = context_data.all_answer_ids;
+			var answer_ids = context_data.all_answer_ids();
 			var len_all = answer_ids.length;
 			if (len_all === 0) {
 				// no "other answers" available and not root element so offer the user to submit and answer
@@ -289,9 +309,10 @@
 						.addClass('element_middle' + css.middle)
 						.attr('element_id', the_node.id())
 						.attr('discussion_context', discussion_context);
+		CSD.views.add_believed_state_for_element(the_node, middle_div_html, discussion_context)
 		outer_div_html = $('<div></div>')
 						.append(middle_div_html)
-						.addClass('element_outer' + css.outer);
+						.addClass('element_outer' + css.outer);  
 		CSD.views.options_for_element(the_node, middle_div_html, discussion_context);
 		
 		return outer_div_html;
@@ -353,7 +374,8 @@
 		var next_node;
 		
 		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection, discussion_context);
-		vertical_connection_html = $('<div></div>').append(symbol_container_html).addClass('vertical_connection believed_true unanswered dispute');
+		vertical_connection_html = $('<div></div>').append(symbol_container_html).addClass('vertical_connection');
+		CSD.views.add_believed_state_for_element(the_connection, vertical_connection_html, discussion_context);
 		
 		
 		//check if there are any more sibling vertical connections to render
@@ -384,7 +406,7 @@
 		
 		//check if there are any nodes that this connection element connects from
 		id_of_next_potential_node = the_connection.connects_from();
-		if (CSD.session.view[discussion_context].ids_in_view.contains(id_of_next_potential_node)) {
+		if (CSD.session.view[discussion_context].ids_in_view().contains(id_of_next_potential_node)) {
 			next_node = CSD.model.get_element_by_id(id_of_next_potential_node);
 			if (next_node) {
 				next_node.render_in_html( discussion_context, html_div_to_render_in);
@@ -413,11 +435,11 @@
 			horizontal_element_group_html;
 		
 		symbol_container_html = CSD.views.html_for_a_connection_symbol_container(the_connection, discussion_context, is_a_horizontal_connection_symbol);
-		horizontal_connection_html = $('<div></div>').append(symbol_container_html).addClass('horizontal_connection believed_false unanswered dispute');
-		
+		horizontal_connection_html = $('<div></div>').append(symbol_container_html).addClass('horizontal_connection');
+		CSD.views.add_believed_state_for_element(the_connection, horizontal_connection_html, discussion_context);
 		
 		//find if the horizontal node is in the elements to display
-		if (CSD.session.view[discussion_context].ids_in_view.contains(the_horizontal_node_id)) {
+		if (CSD.session.view[discussion_context].ids_in_view().contains(the_horizontal_node_id)) {
 			the_horizontal_node = CSD.model.get_element_by_id(the_horizontal_node_id);
 		}
 		
@@ -447,23 +469,38 @@
 		var a_debug = the_connection.id();
 		
 		is_a_horizontal_connection_symbol = is_a_horizontal_connection_symbol || false;
-		var symbol_html,
-			line_html,
-			symbol_container_html,
-			connection_direction = 'vertical',
-			connection_symbol = '&#9650;';
-		
-		if (is_a_horizontal_connection_symbol) {
-			connection_direction = 'horizontal';
-			connection_symbol = '&#9664;';
+		var symbol_html;
+		var line_html;
+		var symbol_container_html;
+		var connection_direction = 'vertical';
+		var connection_type = the_connection.subtype();
+		var connection_symbol = '&#9650;'; // default is an up arrow
+			
+		if (connection_type === 'supports') {
+			if (is_a_horizontal_connection_symbol) {
+				connection_symbol = '&#9664;';
+			}
+		} else if (connection_type === 'questions') {
+			connection_symbol = '?';
+		} else if (connection_type === 'refutes') {
+			connection_symbol = 'X';
+		} else {
+			console.log('ERROR: connection_type = "' + connection_type + '"   #in CSD.views.html_for_a_connection_symbol_container')
 		}
 		
-		symbol_html = $('<div></div>').append(connection_symbol).addClass('supports symbol');
+		
+		if (is_a_horizontal_connection_symbol) {
+				connection_direction = 'horizontal';
+		}
+		
+		
+		symbol_html = $('<div></div>').append(connection_symbol).addClass( connection_type + ' ' + 'symbol');
 		line_html = $('<div></div>').append(symbol_html).addClass(connection_direction + '_line');
 		symbol_container_html = $('<div></div>').append(line_html).addClass('symbol_container').attr('element_id', the_connection.id()).attr('discussion_context', discussion_context);
 		
 		return symbol_container_html;
-	}
+	};
+	
 	
 	CSD.views.html_for_an_element_group = function (is_for_horizontal_node) {
 		var element_group_html = $('<div></div>').addClass('element_group');
@@ -486,8 +523,8 @@
 			connection_elements_connecting__to__this_element = CSD.views_manager.return_elements_NOT_in_view(connection_elements_for_this_element.connections__to__this_element.elements, discussion_context ),
 			options_div_html,
 			div_for_hide_element_option,
-			div_for_show_to_element_option = $('<div></div>').attr('element_id', the_element_id).attr('discussion_context', discussion_context).addClass('show_to, option'),
-			div_for_show_from_element_option = $('<div></div>').attr('element_id', the_element_id).attr('discussion_context', discussion_context).addClass('show_from, option');
+			div_for_show_to_element_option = $('<div></div>').attr('element_id', the_element_id).attr('discussion_context', discussion_context).addClass('show_to option'),
+			div_for_show_from_element_option = $('<div></div>').attr('element_id', the_element_id).attr('discussion_context', discussion_context).addClass('show_from option');
 		
 		//check there are any options to render in the first place
 		//	Test 1: are there 'connection_elements_connecting_from_this_element' and or 'connection_elements_connecting__to__this_element'?
@@ -518,6 +555,59 @@
 			html_to_render_in.append(options_div_html);
 		}
 	};
+	
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	
+	
+	CSD.views.add_believed_state_for_element = function (the_element, the_element_div, discussion_context) {
+		// get the authors for this view_context
+		var author_ids = CSD.session.view[discussion_context].author_ids();
+		//see if this element has any of those authors and, if so, what they believe the state of this element is
+		var authors_of_belief_states_for_element = CSD.model.get_belief_states_by_element_id( the_element.id() );
+		//check authors_of_belief_states_for_element !== undefined, as not all element will have belief states
+		if (authors_of_belief_states_for_element !== undefined) {
+			var i = 0, len = author_ids.length;
+			var sum_of_elements_belief_states = {t: 0, f: 0, d: 0};
+			
+			for (i=0; i < len; i += 1) {
+				//for each author id from the  'CSD.session.view[discussion_context].author_ids' check to see if this element has an entry for that author
+				var an_author_id = author_ids[i];
+				var a_belief_state = authors_of_belief_states_for_element[an_author_id];
+				
+				if (a_belief_state) {
+					sum_of_elements_belief_states[a_belief_state.belief_state()] += 1;
+				}
+			};
+			
+			
+			//apply the appropriate CSS to the element:  
+			//believed_true, believed_false, unsure, dispute
+			// and can have 'many' and 'consensus' as well.
+			var sum = sum_of_elements_belief_states;
+			if ((sum.t === 0) && (sum.f === 0) && (sum.d === 0)) {
+				// no belief states for this element so do nothing
+				
+			} else if ((sum.t === 0) && (sum.f === 0)) {
+				//mark as 'unsure'
+				the_element_div.addClass(' ' + 'unsure');
+				
+			} else if ((sum.t === 0) && (sum.d === 0)) {
+				//mark as 'believed_false'
+				the_element_div.addClass(' ' + 'believed_false');
+				
+			} else if ((sum.f === 0) && (sum.d === 0)) {
+				//mark as 'believed_true'
+				the_element_div.addClass(' ' + 'believed_true');
+				
+			} else {
+				//mark as 'dispute'
+				the_element_div.addClass(' ' + 'dispute');
+				
+			}
+		}
+		
+		
+	};
+	
 	
 	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 

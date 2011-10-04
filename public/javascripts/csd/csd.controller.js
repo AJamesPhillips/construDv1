@@ -21,21 +21,25 @@
 	
 	CSD.controller.necessary_data_is_available = function (function_to_call_once_data_is_available) {
 		var array_of_required_element_ids = [];
-		if (CSD.session.view.type === 'general') {
-			array_of_required_element_ids = array_of_required_element_ids.concat(CSD.session.view.general.ids_in_view);
-			array_of_required_element_ids.push(CSD.session.view.general.root_element_id);
-		} else if (CSD.session.view.type === 'question') {
+		if (CSD.session.view.type === 'as_general') {
+			array_of_required_element_ids = array_of_required_element_ids.concat(CSD.session.view.general.ids_in_view());
+			array_of_required_element_ids.push(CSD.session.view.general.root_element_id());
+			
+		} else if (CSD.session.view.type === 'as_question') {
+			array_of_required_element_ids = array_of_required_element_ids.concat( CSD.session.view.question.ids_in_view() );
+			array_of_required_element_ids.push( CSD.session.view.question.root_element_id() );
+			
 			var sides = CSD.views_manager.answer_discussion_contexts();
-			sides.push('question');
 			var i = 0, len = sides.length;
 				var side;
 			
 			for (i=0; i < len; i += 1) {
 				side = sides[i];
-				array_of_required_element_ids = array_of_required_element_ids.concat(CSD.session.view[side].ids_in_view);
-				array_of_required_element_ids = array_of_required_element_ids.concat(CSD.session.view[side].all_answer_ids);
-				array_of_required_element_ids.push(CSD.session.view[side].root_element_id);
+				array_of_required_element_ids = array_of_required_element_ids.concat( CSD.session.view[side].ids_in_view() );
+				array_of_required_element_ids = array_of_required_element_ids.concat( CSD.session.view[side].all_answer_ids() );
+				array_of_required_element_ids.push( CSD.session.view[side].root_element_id() );
 			};
+			
 		} else {
 			console.log('unsupported CSD.session.view.type: "' + CSD.session.view.type + '" #in CSD.controller.display_discussion');
 		}
@@ -104,8 +108,8 @@
 	
 	CSD.controller.element.node.answer.left_mouse_down = function (the_element, the_discussion_context) {
 		//double check we're in question rendering mode
-		if (CSD.session.view.type === 'question') {
-			CSD.session.view[the_discussion_context].root_element_id = the_element.id();
+		if (CSD.session.view.type === 'as_question') {
+			CSD.session.view[the_discussion_context].root_element_id( the_element.id() );
 			//CSD.session.view[the_discussion_context].other_answer_ids = CSD.session.view[the_discussion_context].other_answer_ids.remove(the_element.id());
 			
 			CSD.controller.element.left_mouse_down(the_element, the_discussion_context);
@@ -113,6 +117,20 @@
 		}
 	};
 	
+
+//###############################	
+	
+	CSD.controller.option = {edit_discussion: {}};
+	
+	CSD.controller.option.edit_discussion.left_mouse_down = function () {
+		CSD.session.editing = !CSD.session.editing;
+		
+		//change the text of the 'edit' button
+		CSD.views.options.editing_button.update(CSD.session.editing);
+		
+		//change the visibility of the editing options panel
+		CSD.views.options.editing_panel.visibilty(CSD.session.editing);
+	};
 	
 //############################### 
 //###############################    HELPER   

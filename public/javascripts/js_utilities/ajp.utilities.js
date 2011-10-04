@@ -304,9 +304,6 @@
 	
 	//// method returns a unique array
 	Array.method('unique', function () {
-		console.log("AJP.utilities has extended Array to have a 'unique' method which has just been called." +
-					"Consider using Jquery's $.unique(), instead as it can account for browser that have " +
-					"interally supported this = more efficient that this javascript.");
 		var is_contained_once = function(element, index, array) {
 			var offset = index + 1;
 			var sub_array = array.slice(offset);  // takes the array from part way form the start to the end
@@ -453,8 +450,108 @@
 	});
 	
 
+	// ####################
+	// Accessor functions
+	// ####################
 	
-
+	
+	AJP.u.safely_add(AJP.u, 'accessor_function', {});
+	AJP.u.safely_add(AJP.u, 'af', AJP.u.accessor_function); //set alias for AJP.u.accessor_function to AJP.u.af
+	
+	AJP.u.safely_add(AJP.u.af, 'array', function (optional_initialising_value) {
+		var convert_input = function (input) {
+			var result = undefined;
+			if (input !== undefined) {
+				if (AJP.u.is_array(input)) {
+					result = input.slice(0); //.slice(0) copies the array
+				} else {
+					console.log('ERROR:  AJP.u.af.array  was expecting an array but has been give an input of: ' + input + ' which is a typeof: ' + (typeof input));
+				}
+			}
+			return result;
+		};
+		
+		var an_array = convert_input(optional_initialising_value);
+		return function (array_to_save) {
+			if (array_to_save) {
+				an_array = convert_input(array_to_save);
+			} else if (array_to_save === false) {
+				an_array = [];
+			} else {
+				return convert_input(an_array);
+			}
+		};
+	});
+	
+	
+	AJP.u.safely_add(AJP.u.af, 'number', function (optional_initialising_value) {
+		var convert_input = function (input) {
+			var result = undefined;
+			if (input !== undefined) {
+				result = Number(input);
+			}
+			return result;
+		};
+		
+		var a_number = convert_input(optional_initialising_value);
+		
+		return function (number_to_save) {
+			if (number_to_save) {
+				a_number = convert_input(number_to_save);
+			} else if (number_to_save === false) {
+				a_number = undefined;
+			} else {
+				return convert_input(a_number);
+			}
+		};
+	});	
+	
+	
+	AJP.u.safely_add(AJP.u.af, 'string', function (optional_initialising_value) {
+		var a_string = String(optional_initialising_value);
+		
+		return function (string_to_save) {
+			if (string_to_save) {
+				a_string = String(string_to_save);
+			} else if (string_to_save === false) {
+				a_string = undefined;  //@TODO need to test this to make sure String(undefined) returns undefined
+			} else {
+				return String(a_string);
+			}
+		};
+	});	
+	
+	
+	
+	
+	// if initialised with nothing,  i.e. var a = AJP.u.af.booleeann()  //# a === undefined     if initialised with something else then, it's true or false
+	AJP.u.safely_add(AJP.u.af, 'booleeann', function (optional_initialising_value) {
+		var convert_input = function (input) {
+			var result = undefined;
+			if (input !== undefined) {
+				result = !!input;
+			}
+			return result;
+		};
+		
+		var a_boolean = convert_input(optional_initialising_value);
+		
+		return function (boolean_to_save) {
+			if ((boolean_to_save === true) || (boolean_to_save === false)) {
+				a_boolean = convert_input(boolean_to_save);  //@TODO check this works.
+			} else if (boolean_to_save === 'undefine this') {
+				a_boolean = undefined;
+			} else {
+				return convert_input(a_boolean);
+			}
+		};
+	});
+	
+	
+	
+	
+	
+	
 	AJP.u.add_attributes_from_object(AJP.utilities, {
 	    // The order of all these lists has been reversed from the way 
 	    // ActiveSupport had them to keep the correct priority.

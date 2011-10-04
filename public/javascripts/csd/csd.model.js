@@ -345,6 +345,47 @@
 		return the_new_iel_link;
 	};
 	
+	
+	
+	CSD.model.belief_state = function (specification, objects_private_state) {
+		// declare the variable for the new object 
+		var the_new_belief_state = {};
+		
+		//convert the strings to integer values
+		specification.user_id = parseInt(specification.user_id, 10);
+		specification.element_id = parseInt(specification.element_id, 10);
+		
+		//set the private instance variables
+		var author_id = function () {
+			return specification.user_id;
+		},
+		element_id = function () {
+			return specification.element_id;
+		},
+		created_at = function () {
+			return specification.created_at;
+		},
+		belief_state = function () {
+			return specification.believed_state;
+		};
+		
+		//any private_states from higher up the inheritance chain
+		objects_private_state = objects_private_state || {};
+		// add any shared variables and functions to objects_private_state here
+		
+		// make a new object and assign it to the_new_element
+		the_new_belief_state = {
+			author_id: 		author_id,
+			element_id: 	element_id,
+			created_at:		created_at,
+			belief_state:	belief_state };
+		
+		
+		return the_new_belief_state;
+	};
+	
+	
+	
 
 
 	CSD.model.find_ids_of_elements_linked_with_an_element_id = function (id_of_element, degrees_of_connection, ids_obtained_so_far) {
@@ -639,6 +680,19 @@
 		return the_element;
 	};
 	
+	
+	CSD.model.get_belief_states_by_element_id = function (id_of_element_to_get_belief_states_for) {
+		var the_belief_state = CSD.data.belief_state_by_element_id[id_of_element_to_get_belief_states_for];
+			
+		if (the_belief_state === undefined) {
+			//throw {
+			//	name: 'belief_state data unavailable',
+			//	message: "belief_state for element of id: '" + id_of_element_to_get_belief_states_for + "' was requested but was not available locally #in CSD.model.get_belief_states_by_element_id "
+			//};
+		}
+
+		return the_belief_state;
+	};
 	
 	
 	

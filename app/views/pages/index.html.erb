@@ -1,4 +1,5 @@
-You search for "<%= params[:search] %>" returned <%= pluralize @elements.count, 'result' %>
+<% @new_element_description = params[:search] %>
+You search for "<%= @new_element_description %>" returned <%= pluralize @elements.count, 'result' %>
 <br /> <br /> 
 
 <% if @elements.empty? && signed_in? %>

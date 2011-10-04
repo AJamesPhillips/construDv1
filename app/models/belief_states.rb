@@ -6,5 +6,7 @@ class BeliefStates < ActiveRecord::Base
   
   validates :believed_true, { :inclusion => ['t','d','f'] }
   
+  scope :not_archived, lambda { where(:archived => false)}
+  
   
 end

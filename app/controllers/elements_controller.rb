@@ -69,7 +69,12 @@ class ElementsController < ApplicationController
   def show
     ## remove any author ids from the request, e.g. takes params[:id] = "3-0,1-4authors=5,4"  and returns params[:id] = "3-0,1-4"  and  @author_ids = [5,4]
     @author_ids = params[:id].slice!(/authors=(.)*/)
-    @author_ids = @author_ids.sub(/authors=/,'').split(',') unless @author_ids.nil?
+    if @author_ids.nil?
+      @author_ids = []
+    else
+      @author_ids = @author_ids.sub(/authors=/,'').split(',')
+    end
+    
     
     
     ## initial check for if it's a json or html request.
@@ -83,6 +88,7 @@ class ElementsController < ApplicationController
         @root_element = Element.find(@root_element_id)
         
         ##quickly test that this isn't a request for a question element, else modify the request to have 6 degrees of view
+        logger.debug ">>>   @root_element.is_a_question_node? = #{@root_element.is_a_question_node?}  # in show of elements_controller"
         if @root_element.is_a_question_node?
           params[:id] = @root_element_id.to_s + '-6';
         end
@@ -167,15 +173,19 @@ class ElementsController < ApplicationController
     logger.debug ">>>  @element_links = #{@element_links}  # in show of elements_controller"
     
     
-    @array_of_ids = @elements.map {|element| element.id }
-    logger.debug ">>>  @array_of_ids = #{@array_of_ids}  # in show of elements_controller"
+    ## take each element and get it's id value into an array_of_element_ids
+    @array_of_element_ids = @elements.map {|element| element.id }
+    logger.debug ">>>  @array_of_element_ids = #{@array_of_element_ids}  # in show of elements_controller"
     
     
     
     ## get the believed truth states for each discussion element
-    @belief_states = BeliefStates.find_all_by_user_id_and_element_id(@author_ids, @array_of_ids) unless (@author_ids.empty? || @array_of_ids.empty?)
-    @belief_states = BeliefStates.find_all_by_element_id(@array_of_ids) unless @array_of_ids.empty?
+    @belief_states = BeliefStates.not_archived.find_all_by_user_id_and_element_id(@author_ids, @array_of_element_ids) unless (@author_ids.empty? || @array_of_element_ids.empty?)
+    @belief_states = BeliefStates.not_archived.find_all_by_element_id(@array_of_element_ids) unless @array_of_element_ids.empty?
     
+    
+    ##get a new element, ofr use as the template for the options panel
+    @element = Element.new()
     
     
     respond_to do |format|
