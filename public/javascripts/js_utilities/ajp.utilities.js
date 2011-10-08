@@ -22,22 +22,10 @@
 	};
 	
 	
-	/*
-	Object.prototype.safely_add_new_attribute: function (name, attribute) {
-		if (!this[name]) {  // check to see if this attribute name has already been used.
-			this[name] = attribute;
-			return this;
-		} else {
-			throw {
-				name: 'Immutable error, from safely_add_new_attribute()',
-				message: 'you tried to assign \'' + name + '\' to an object that already has this.  Object = ' + this
-			}
-		}
-	}
-	*/
-	(Object.prototype.this_is_to_remind_me_to_use_hasOwnProperty_incase_someone_has_extended_Object_prototype = function () {
-		var no_value = 0;
-	})();
+
+//	(Object.prototype.this_is_to_remind_me_to_use_hasOwnProperty_incase_someone_has_extended_Object_prototype = function () {
+//		var no_value = 0;
+//	})();
 	
 
 	//// method to find integer of a number 

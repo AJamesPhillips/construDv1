@@ -1,14 +1,19 @@
 <div id="footer_div">
+	
+	<%# unless @element.nil? %>
 	<div id="editing_panel" class="round">
+		<input id="reset_editing_panel" class="option_button" type="submit" value="reset" />
 		<div id="editing_panel_messages">
-			Please select an element, or part of an element.
+			Please select a discussion element,<br /> part of an element's text,<br /> or create a new one below:
 		</div>
+		
+		
+		
 		<div id="editing_panel_options">
-			<div id="editing_option_new_node" class="editing_option">
-				<%= render 'elements/fields' %>
-			</div>
+			<%= render 'elements/set_multiple'%>
 		</div>
 	</div>
+	<%# end %>
 	
 	<footer>
 		<nav class="round">

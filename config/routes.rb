@@ -1,7 +1,12 @@
 CsdApp::Application.routes.draw do
   
 
-  resources :elements
+  resources :elements do
+    collection do
+      post 'create_multiple'
+    end
+  end
+  
   resources :users
   match '/admins', :to => "users#index_of_admins"
   resources :sessions, :only => [:new, :create, :destroy]

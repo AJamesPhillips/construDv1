@@ -49,9 +49,13 @@
 		var i=0, len = elements_selection_components.length;
 		var a_selection_component;
 		var still_need_to_inserted_start_position = still_need_to_inserted_end_position = true;
-		var span_id = span_id || ((len/2) + '_TEMP');
-		var start_selection_componenet = {position: start_point_of_selection, type: 'start', span_id: ('SPAN_'+span_id), style: selection_style};
-		var end_selection_componenet = {position: end_point_of_selection, type: 'end', span_id: ('SPAN_'+span_id), style: selection_style};
+		if (span_id) {
+			span_id = 'SPAN_' + span_id;
+		} else {
+			span_id = 'SPAN_' + ((len/2) + '_TEMP');
+		}
+		var start_selection_componenet = {position: start_point_of_selection, type: 'start', span_id: (span_id), style: selection_style};
+		var end_selection_componenet = {position: end_point_of_selection, type: 'end', span_id: (span_id), style: selection_style};
 		
 		if (start_point_of_selection < end_point_of_selection) {
 			//get each selection component and read it's position.
@@ -87,6 +91,7 @@
 			console.log('invalid parameters:\nStart point needs to be < than end point.  start_point_of_selection = ' + start_point_of_selection + ' but end_point_of_selection = ' + end_point_of_selection + '  #in .save_selection');
 		}
 		
+		return span_id; // temporary_span_selection_id
 	};
 	
 	CSD.session.clear_all_selections = function () {

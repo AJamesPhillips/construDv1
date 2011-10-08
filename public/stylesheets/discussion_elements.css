@@ -162,16 +162,18 @@ div.horizontal_connection > div.symbol_container {
 
 
 
-div.supports {
-    font-size: 0.8em;
+div.supports, div.definition {
+    font-size: 0.85em;
     
 }
-div.horizontal_connection > div.symbol_container > div > div.supports {
+div.horizontal_connection > div.symbol_container > div > div.supports,
+div.horizontal_connection > div.symbol_container > div > div.definition {
     background-color: transparent;
     left: 0px;
     top: -6px;
 }
-div.vertical_connection > div.symbol_container > div > div.supports {
+div.vertical_connection > div.symbol_container > div > div.supports,
+div.vertical_connection > div.symbol_container > div > div.definition {
     left: -7px;
     top:-2px;
     background-color: transparent;
@@ -292,4 +294,7 @@ div.element_middle:hover {
 }
 .highlighted_text {  /* this is done by use drag and select */
 	background-color: #ccebef;
+}
+.discussion_node_part:hover {  /* this is done by use drag and select */
+	background-color: #ccffaa;
 }

@@ -71,7 +71,7 @@
 	
 	
 	CSD.views.options = {editing_button: {},
-						 editing_panel:  {}};
+						 editing_panel:  {new_node_entry_fields: {}}};
 						 
 	CSD.views.options.editing_button.update = function (currently_editing) {
 		var jquery_of_edit_button = $('#edit_discussion');
@@ -93,8 +93,23 @@
 			jquery_of_editing_panel.attr('style','display: none;');
 		}
 	};
-
-
+	
+	
+	
+	
+	CSD.views.options.editing_panel.new_node_entry_fields.visibilty = function (entry_field_group_number, show_entry_fields) {
+		entry_field_group_number = entry_field_group_number || 1;
+		var jquery_of_editing_panel_new_node_entry_fields = $('#editing_discussion__new_node_entry_fields_' + entry_field_group_number);
+		
+		if (show_entry_fields) {
+			jquery_of_editing_panel_new_node_entry_fields.attr('style','display: block;');
+		} else {
+			jquery_of_editing_panel_new_node_entry_fields.attr('style','display: none;');
+		}
+	};
+	
+	
+	
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //###############################    VIEWS (render discussions in nested divs, no html5)  
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -306,6 +321,7 @@
 						//.attr('discussion_context', discussion_context);
 		middle_div_html = $('<div></div>')
 						.append(inner_div_html)
+						.append('(' + the_node.id() + ')')
 						.addClass('element_middle' + css.middle)
 						.attr('element_id', the_node.id())
 						.attr('discussion_context', discussion_context);

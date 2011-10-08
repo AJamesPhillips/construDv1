@@ -61,11 +61,12 @@
 	
 
 	
-	CSD.controller.element = {node: 	  { question:  {},
-									 		answer:    {},
-									 		statement: {}},
-							  connection: {},
-							  part: 	  {} };
+	CSD.controller.element = {node: 	  		{ question:  {},
+									 			  answer:    {},
+									 			  statement: {}},
+							  connection: 		{},
+							  part: 	  		{},
+							  currently_editing: {} };
 	
     //Left mouse button pressed on a discussion element.
     //  Find out if it has any elements linked to it.  If so, display all of them.
@@ -115,6 +116,23 @@
 			CSD.controller.element.left_mouse_down(the_element, the_discussion_context);
 			//CSD.controller.necessary_data_is_available(CSD.views.show_view(the_discussion_context));
 		}
+	};
+	
+	
+	
+	CSD.controller.element.currently_editing.part_of_elemented_selected = function ( selected_element_html_id, temporary_span_selection_id ) {
+		
+		var text_from_selection = $('#' + selected_element_html_id + ', [span_ids="' + temporary_span_selection_id + '"]').text();
+		$('#editing_panel_messages').text('"' + text_from_selection + '" is questionable due to lack a definition.');
+		//CSD.views.options.editing_panel.new_node_entry_fields.visibilty(1, false);
+		//CSD.views.options.editing_panel.new_part_node_entry_fields.visibilty(1, false);
+		
+	};
+	
+	
+	
+	CSD.controller.element.currently_editing.element_selected = function ( selected_element_html_id ) {
+		
 	};
 	
 

@@ -5,7 +5,6 @@ class PagesController < ApplicationController
   def home
     @title = "Home"
     @elements = User.first.elements
-    
   end
 
   def help

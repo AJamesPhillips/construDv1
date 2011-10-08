@@ -54,7 +54,7 @@
 				
 				
 			} else {
-				//ignore this interaction by the user
+				//ignore this interaction, as the user maybe clicking or selecting
 			}
 	    };
 	    
@@ -109,25 +109,40 @@
 		//});
 		
 		//register mouse up for when the user is selecting text
-	    $('#main_discussion_container, #discussion_definition').bind('mouseup.CSD', function(event2) {
+	    $('#main_discussion_container, #discussion_definition').bind('mouseup.CSD', function (event2) {
 			event2.stopPropagation();
 		    switch (event2.which) {
 		        case 1: //Left mouse button pressed
 					var selected_element_html_id = CSD.session.selected_element_html().id;
+					
 					//check that user is in editing mode and had clicked on valid element
 					if (CSD.session.editing && selected_element_html_id) {
 						//find the text selected by the user
-						CSD.rh.find_selected_parts_of_discussion_elements(selected_element_html_id);
-						//highlight selected text with spans
-						CSD.views.draw_selections(selected_element_html_id);
+						var the_temporary_span_selection_id = CSD.rh.find_selected_parts_of_discussion_elements(selected_element_html_id);
+						
+						//if there was any highlighting then 
+						if (the_temporary_span_selection_id) {
+							//highlight selected text with spans
+							CSD.views.draw_selections( selected_element_html_id );
+							//there has been highlighting, so just update the editing_panel with the element id
+							CSD.controller.element.currently_editing.part_of_elemented_selected( selected_element_html_id, the_temporary_span_selection_id );
+							
+						} else {
+							//no highlighting, so just update the editing_panel with the element id
+							CSD.controller.element.currently_editing.element_selected( selected_element_html_id );
+							
+						}
 					}
 		        	//alert('left');
 		            break;
+		            
 		        case 2: //Middle mouse button pressed
 		            break;
+		            
 		        case 3: //Right mouse button pressed
 		        	//alert('right');
 		            break;
+		            
 		        default: //You have a strange mouse
 		    }
 		});
@@ -250,16 +265,24 @@
 			//remove users selection
 			user_selection.collapseToStart();
 			
-			//save selection to list of selections
-			CSD.session.save_selection(id_of_mousedown_element, starting_point, (starting_point+length_to_take_from_selection), undefined, undefined);
+			//save selection to list of selections and capture its temporary_span_selection_id
+			var temporary_span_selection_id = CSD.session.save_selection(id_of_mousedown_element, starting_point, (starting_point+length_to_take_from_selection), undefined, undefined);
+			
+			// return true to indicate no selection has occured.
+			return temporary_span_selection_id;  // @TODO check this works for all situations, like when a non element has mouse_down, and a selection made and mouse_up is also on non-discussion elements.
 			
 		} else {
 			//just treat this as a mouse click and just
 			//store the id of the selected element
 			//// CSD.session.selected_element_html(this);
 			//// $('#selected_text').text(id_of_mousedown_element);
+			
+			// return false to indicate no selection has occured.
+			return false;
 		}
 		
+		
+
 	};
 	
 	
