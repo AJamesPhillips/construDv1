@@ -1,0 +1,8 @@
+<%# Used by set_multiple.html.erb %>
+<div id="editing_discussion__new_element_entry_fields_<%= element_number %>" class="editing_option">
+	<%= f.text_field :id, :placeholder => 'id' %>
+	<%= f.text_field :content, :placeholder => 'content' %>
+	<%= f.select :element_type, options_for_select(Element::VALID_ELEMENT_TYPES) %>
+	<%= f.select :subtype, options_for_select(Element::VALID_NODE_SUBTYPES) %>
+	<%= f.text_field :id_of_parent_of_part_element, :placeholder => 'id_of_parent_of_part_element' %>
+</div>

@@ -1,0 +1,4 @@
+<% a_string = "" %>
+<% @elements.each_index {|index| a_string += ("element #{index.to_s}" + @elements[index].errors.to_s.gsub('\'','').gsub('<','').gsub('>','').gsub('"','')) } %>
+
+alert("<%= a_string %>");

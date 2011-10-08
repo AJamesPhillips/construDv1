@@ -1,0 +1,28 @@
+<%= form_tag create_multiple_elements_path, :remote => true do %>
+  	
+  	<% element = Element.new({:element_type => 'node', 		 :subtype => 'statement' }) %>
+    <%= fields_for 'elements[]', element do |f| %>
+      <%= render :partial => 'elements/element_fields_for_multiple', :locals => {:f => f, :element => element, :element_number => 0} %>
+    <% end %>
+    
+	<% element = Element.new({:element_type => 'connection', :subtype => 'supports' }) %>
+	<% element_number = 1 %>
+	<%= fields_for 'elements[]', element do |f| %>
+    	<div id="editing_discussion__new_element_entry_fields_<%= element_number %>" class="editing_option">
+			<%= f.hidden_field :id, :placeholder => 'id' %> <%# this isn't used for anything but I have to include it otherwise rails.js messes up %> 
+			<%= f.hidden_field :content, :placeholder => 'content' %> <%# this isn't used for anything but I have to include it otherwise rails.js messes up %> 
+			<%= f.hidden_field :element_type, :value => element.element_type %>
+			<%= f.select :subtype, options_for_select(Element::VIEW_READY_CONNECTION_SUBTYPES) %>
+			<%= f.select :connection_direction, ['backwards', 'forwards'] %>
+		</div>
+    <% end %>
+    
+	<% element = Element.new({:element_type => 'node', 		 :subtype => 'statement' }) %>
+  	<%= fields_for 'elements[]', element do |f| %>
+      <%= render :partial => 'elements/element_fields_for_multiple', :locals => {:f => f, :element => element, :element_number => 2} %>
+    <% end %>
+    
+  
+  
+  <%= submit_tag "Create Elements" %>
+<% end %>
