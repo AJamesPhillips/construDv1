@@ -55,7 +55,7 @@
 		var number_of_other_answers;
 
 		if (root_element_id) {
-			number_of_other_answers = context_data.all_answer_ids;
+			//number_of_other_answers = context_data.all_answer_ids;
 			CSD.views.render_discussion_html(discussion_context);
 		} else {
 			if (true) {
@@ -268,16 +268,29 @@
 	
 	CSD.views.render_node_in_html = function (the_node, discussion_context, html_div_to_render_in) {
 		var a_debug = the_node.id();
-		var connections_for_this_node;
-		var connections__to__this_node;
+		var connections_for_this_node = the_node.connection_elements_for_this_node_and_its_parts();
+		var connections__to__this_node = connections_for_this_node.connections__to__these_elements;
 		
-		if (the_node.element_type() === 'part') {
+		if (the_node.is_a_part_element_q()) {
 			html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, discussion_context, the_node.text_part()));
 			connections__to__this_node = the_node.connections__to__this_element();
-		} else {
+			
+		} else if (the_node.is_an_answer_node_q()) { // we have an answer node.  Check it's question isn't in view
+			var question_id = the_node.which_question_id_is_this_an_answer_for();
+			var question = CSD.model.get_element_by_id(question_id);
+			var a = CSD.views_manager.return_elements_in_view([question]);
+			
+			if (CSD.views_manager.return_elements_in_view([question]).length === 0 ) {
+				//this answer question is not in view so render this answer nodes content with its questions content prepended.
+				var extra_content = {to_prepend: (question.content() + ': ')};
+				html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, discussion_context, undefined, undefined, extra_content));
+				
+			} else {
+				//other wise, just render it's content as normal.
+				html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, discussion_context));
+			}
+		} else { //render a normal node (statement, reference, sub-statement, question)
 			html_div_to_render_in.append(CSD.views.html_for_a_node(the_node, discussion_context));
-			connections_for_this_node = the_node.connection_elements_for_this_node_and_its_parts();
-			connections__to__this_node = connections_for_this_node.connections__to__these_elements;
 		}
 		
 		
@@ -290,7 +303,7 @@
 	};
 	
 	
-	CSD.views.html_for_a_node = function (the_node, discussion_context, content_for_part_node, optional_css) {
+	CSD.views.html_for_a_node = function (the_node, discussion_context, content_for_part_node, optional_css, optional_content_text) {
 		var a_debug = the_node.id();
 		
 		var the_content = content_for_part_node || the_node.content();
@@ -298,12 +311,15 @@
 		css.inner = css.inner || '';
 		css.middle = css.middle || '';
 		css.outer = css.outer || '';
+		var extra_content = optional_content_text || {};
+		extra_content.to_prepend = extra_content.to_prepend || '';
+		extra_content.to_append = extra_content.to_append || '';
 	
 		
 		//if content_for_part_node has been supplied, then we're rendering a part node as a root
 		//  if we didn't change anything then it would look like an element, so instead
-		//  save a selection, selecting this content as if it were an element, but without changing the div id
-		//  to that of that parent element id (which might confuse things latter in development, dunno)
+		//  save a selection, selecting this content as if it were an element (but without changing the div id
+		//  to that of that parent element id - which might confuse things later in development, dunno)
 		//n.b. this temporary selection will be over written once the parent of this part node is displayed
 		if (content_for_part_node) {
 			CSD.session.save_selection(the_node.id(), 0, content_for_part_node.length, the_node.id(), 'discussion_node_part');
@@ -315,7 +331,9 @@
 		var outer_div_html;
 		
 		inner_div_html = $('<div></div>')
+						.append(extra_content.to_prepend)
 						.append(the_content)//CSD.views.html_for_statement_parts(the_node))
+						.append(extra_content.to_append)
 						.addClass('element_inner' + css.inner);
 						//.attr('element_id', the_node.id())
 						//.attr('discussion_context', discussion_context);
@@ -362,7 +380,7 @@
 		var a_debug = the_connection.id();
 		//connection is either:
 		// > known to connect to a node, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection'
-		// > known to connect to a vertical connection, so it will not have an 'array_of_remaining_sibling_vertical_connections' and will call 'html_for_a_horizontal_connection' (passing the_horizontal_node if it's available)
+		// > known to connect to a vertical connection, so it will *not* have an 'array_of_remaining_sibling_vertical_connections' and will call 'html_for_a_horizontal_connection' (passing the_horizontal_node if it's available)
 		// > known to connect to a horizontal connection, so it will have an 'array_of_remaining_sibling_vertical_connections' (even if it's an empty array) and will call 'html_for_a_vertical_connection' without a corresponding 'the_horizontal_node'
 		// > is not known to connect to either node, or horizontal or vertical connection to so will be called with an empty array for 'array_of_remaining_sibling_vertical_connections' and will render as a vertical connection.
 		if (other_parameters.array_of_remaining_sibling_vertical_connections) {
@@ -413,7 +431,7 @@
 		
 		//check if there are any connections that connect to this vertical connection element
 		array_of_horizontal_connections = the_connection.connections__to__this_element();
-		array_of_horizontal_connections = CSD.views_manager.return_elements_in_view(array_of_horizontal_connections.elements);
+		array_of_horizontal_connections = CSD.views_manager.return_elements_in_view(array_of_horizontal_connections.elements, discussion_context);
 		len = array_of_horizontal_connections.length;
 		for (i = 0; i < len; i += 1) {
 			array_of_horizontal_connections[i].render_in_html( discussion_context, vertical_connection_html);
@@ -460,7 +478,7 @@
 		}
 		
 		//find which of the vertical connections to this horizontal connection is in the elements to display
-		vertical_connections_to_this_horizontal_connection = CSD.views_manager.return_elements_in_view(vertical_connections_to_this_horizontal_connection.elements);
+		vertical_connections_to_this_horizontal_connection = CSD.views_manager.return_elements_in_view(vertical_connections_to_this_horizontal_connection.elements, discussion_context);
 		//render any vertical connections to this horizontal connection
 		if (vertical_connections_to_this_horizontal_connection.length > 0) {
 			vertical_element_group_html = CSD.views.html_for_an_element_group();

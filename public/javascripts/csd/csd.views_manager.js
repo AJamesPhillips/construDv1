@@ -32,11 +32,11 @@
 	CSD.session.view = {};
 	CSD.session.view.type = 'as_general'; // 'as_general'  or 'as_question'
 
-	CSD.session.view.general =  {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'main_discussion_container'};   
-	CSD.session.view.question = {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'discussion_definition', 			minimised: AJP.u.af.booleeann()};
-	CSD.session.view.pro =  	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'pro_side_discussion_container',  minimised: AJP.u.af.booleeann(false), all_answer_ids: AJP.u.af.array([])};
-	CSD.session.view.dn =   	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'dn_side_discussion_container',   minimised: AJP.u.af.booleeann(false), all_answer_ids: AJP.u.af.array([])};
-	CSD.session.view.anti = 	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'anti_side_discussion_container', minimised: AJP.u.af.booleeann(false), all_answer_ids: AJP.u.af.array([])};
+	CSD.session.view.general =  {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'main_discussion_container', 		minimised: AJP.u.af.booleeann(true)};   
+	CSD.session.view.question = {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'discussion_definition', 			minimised: AJP.u.af.booleeann(true)};
+	CSD.session.view.pro =  	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'pro_side_discussion_container',  minimised: AJP.u.af.booleeann(true), all_answer_ids: AJP.u.af.array([])};
+	CSD.session.view.dn =   	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'dn_side_discussion_container',   minimised: AJP.u.af.booleeann(true), all_answer_ids: AJP.u.af.array([])};
+	CSD.session.view.anti = 	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'anti_side_discussion_container', minimised: AJP.u.af.booleeann(true), all_answer_ids: AJP.u.af.array([])};
 	//n.b. for pro, dn and anti, if root_element_id === NaN, and all_answer_ids === [], there is no know answer for the question posed
 	//							 if root_element_id === undefined, and all_answer_ids === [some-ids], there are several answers, and one has yet to be chosen for display
 	//							 if root_element_id === some-id, and all_answer_ids === [], there  is only 1 answers, and it's chosen for display
@@ -49,8 +49,17 @@
 	
 	CSD.views_manager.set_view_as_question = function (question_node_id, do_not_update_view_to_find_answers) {
 		CSD.session.view.type = 'as_question';
-		CSD.session.view.question.minimised = false;
+		CSD.session.view.question.minimised(false);
+		CSD.session.view.general.minimised(true);
 		CSD.session.view.question.root_element_id(question_node_id);
+		
+		//d/
+		var a_debug = CSD.session.view.general.ids_in_view();
+		var b_debug = CSD.session.view.question.ids_in_view();
+		var c_debug = CSD.session.view.pro.ids_in_view();
+		var d_debug = CSD.session.view.dn.ids_in_view();
+		var e_debug = CSD.session.view.anti.ids_in_view();
+		
 		
 		//set the question as being in the view of CSD.session.view.question
 		CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context(question_node_id, 'question', 4);
@@ -75,7 +84,7 @@
 				side = sides[i];
 				
 				//set the minimised values for each view context  to false;
-				CSD.session.view[side].minimised = false;
+				CSD.session.view[side].minimised(false);
 				
 				//if there is are only one answer for this discussion side, then set this as the root element_id
 				var answers_for_this_side = answer_nodes[sides2[i]];
@@ -96,32 +105,45 @@
 			}
 		}
 		
+		//d/
+		var a2_debug = CSD.session.view.general.ids_in_view();
+		var b2_debug = CSD.session.view.question.ids_in_view();
+		var c2_debug = CSD.session.view.pro.ids_in_view();
+		var d2_debug = CSD.session.view.dn.ids_in_view();
+		var e2_debug = CSD.session.view.anti.ids_in_view();
+		
 		//remove the answer connection ids from being in the 'question' view context
 		CSD.session.view.question.ids_in_view( CSD.session.view.question.ids_in_view().remove_array(answer_connection_ids) );
 		
 	};
 	
 	
-	CSD.views_manager.set_the_answer_to_view = function (answer_node_id, discussion_context) {
-		if (CSD.session.view.type === 'as_question') {
-			//check it is a valid answer discussion_context
-			if (CSD.views_manager.answer_discussion_contexts().contains( discussion_context )) {
-				CSD.session.view[discussion_context].root_element_id( answer_node_id );
-				CSD.session.view[discussion_context].minimised( false );
-				
-				CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context(answer_node_id, discussion_context, 4);
-				
-			} else {
-				console.log('invalid discussion_context: "' + discussion_context + '" #in CSD.views_manager.set_the_answer_to_view');
-			}
-		} else {
-			console.log('can not set an answer whilst CSD.session.view.type !== "as_question"  (currently it is set to: "' + CSD.session.view.type + '" #in CSD.views_manager.set_the_answer_to_view');
-		}
-	};
+//	CSD.views_manager.set_the_answer_to_view = function (answer_node_id, discussion_context) {
+//		if (CSD.session.view.type === 'as_question') {
+//			//check it is a valid answer discussion_context
+//			if (CSD.views_manager.answer_discussion_contexts().contains( discussion_context )) {
+//				CSD.session.view[discussion_context].root_element_id( answer_node_id );
+//				CSD.session.view[discussion_context].minimised( false );
+//				
+//				CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context(answer_node_id, discussion_context, 4);
+//				
+//			} else {
+//				console.log('invalid discussion_context: "' + discussion_context + '" #in CSD.views_manager.set_the_answer_to_view');
+//			}
+//		} else {
+//			console.log('can not set an answer whilst CSD.session.view.type !== "as_question"  (currently it is set to: "' + CSD.session.view.type + '" #in CSD.views_manager.set_the_answer_to_view');
+//		}
+//	};
 	
 	
 	CSD.views_manager.set_view_as_general = function (a_discussion_element_id) {
 		CSD.session.view.type = 'as_general';
+		CSD.session.view.general.minimised(false);
+		CSD.session.view.question.minimised(true);
+		CSD.session.view.pro.minimised(true);
+		CSD.session.view.dn.minimised(true);
+		CSD.session.view.anti.minimised(true);
+		
 		CSD.session.view.general.root_element_id( a_discussion_element_id );
 
 		CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context(a_discussion_element_id, 'general', 4);
@@ -133,10 +155,12 @@
 	//		n.b. @TODO would be nice to implement this where, if the discussion_element.type() === node, it only finds elements that are either connections to the 
 	//		discussion_element or are parts, or if discussion_element.type() === connection then only nodes connected from the discussion_element, or connections to it. 
 	CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context = function (a_discussion_element_id, discussion_context, degrees_of_view, clear_ids_to_view) {
+		var e_debug = CSD.session.view[discussion_context].ids_in_view();
+		
 		//check it is a valid discussion_context
 		if (CSD.views_manager.all_discussion_contexts().contains( discussion_context )) {
 			if (clear_ids_to_view) {
-				CSD.session.view[discussion_context].ids_in_view(false);
+				CSD.session.view[discussion_context].ids_in_view([]);
 			}
 			//set the element as being in the view of CSD.session.view.[context]
 			var ids_in_view = CSD.session.view[discussion_context].ids_in_view();
@@ -144,15 +168,18 @@
 			CSD.session.view[discussion_context].ids_in_view( ids_in_view );
 			
 			var the_element = CSD.model.get_element_by_id(a_discussion_element_id);
-			//find all of the elements linked to this element
-			if (degrees_of_view !== 0) { //test for not being 0, otherwise .ids_of_linked_elements() method will change 0 into 1.
-				var elements_ids_linked_to_this_element = the_element.ids_of_linked_elements(degrees_of_view);  // n.b. this doesn't ensure it will actually go to 'degrees_of_view' degrees of linkage
-				//add these to the ids_in_view for this view context:
-				CSD.session.view[discussion_context].ids_in_view( CSD.session.view[discussion_context].ids_in_view().concat(elements_ids_linked_to_this_element) );
-			}
+		
+			//find all of the elements linked below this element
+			var elements_ids_linked_to_this_element = CSD.model.elements_beneath_this_element(the_element, degrees_of_view).ids;  // n.b. this doesn't ensure it will actually go to 'degrees_of_view' degrees of linkage
+			//add these to the ids_in_view for this view context:
+			CSD.session.view[discussion_context].ids_in_view( CSD.session.view[discussion_context].ids_in_view().concat(elements_ids_linked_to_this_element) );
+			
 			
 			CSD.session.view[discussion_context].ids_in_view( CSD.session.view[discussion_context].ids_in_view().unique() );
 		}
+		
+		var e2_debug = CSD.session.view[discussion_context].ids_in_view();
+		var f_debug = 1;
 	};
 	
 	
@@ -291,17 +318,21 @@
 			}
 		}
 		
-		//default action: find, then iterate over all discussion contexts
+		//default action: find, then iterate over all discussion contexts that are not minimised
 		var all_discussion_contexts = CSD.views_manager.all_discussion_contexts();
 		var i = 0, len = all_discussion_contexts.length;
 		var results = {};
 		var results_from_all_discussion_context = [];// = {ids: [], elements: []};
+		var a_context;
 		
 		for (i=0; i < len; i += 1 ) {
-			results = filter_function(all_discussion_contexts[i], additional_parameters_for_function);
-			results_from_all_discussion_context = results_from_all_discussion_context.concat(results);
-			//results_from_all_discussion_context.ids = results_from_all_discussion_context.ids.concat( results.ids );
-			//results_from_all_discussion_context.elements = results_from_all_discussion_context.elements.concat( results.elements );
+			a_context = all_discussion_contexts[i];
+			if (!CSD.session.view[a_context].minimised()) {
+				results = filter_function(a_context, additional_parameters_for_function);
+				results_from_all_discussion_context = results_from_all_discussion_context.concat(results);
+				//results_from_all_discussion_context.ids = results_from_all_discussion_context.ids.concat( results.ids );
+				//results_from_all_discussion_context.elements = results_from_all_discussion_context.elements.concat( results.elements );
+			}
 		}
 		return results_from_all_discussion_context;
 	};

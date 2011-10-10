@@ -30,7 +30,7 @@ class Element < ActiveRecord::Base
   validates :element_type, { :presence => true,
                              :inclusion => VALID_ELEMENT_TYPES }
                              
-  VALID_NODE_SUBTYPES = ['statement', 'sub-statement', 'question', 'reference']
+  VALID_NODE_SUBTYPES = ['statement', 'sub-statement', 'question', 'reference', 'answer']
   VIEW_READY_FORWARD_CONNECTION_SUBTYPES =  {'supports'        => 'supports', 'refutes'       => 'refutes', 'questions'        => 'questions', 'defines'       => 'definition'}
   VIEW_READY_BACKWARD_CONNECTION_SUBTYPES = {'is supported by' => 'supports', 'is refuted by' => 'refutes', 'is questioned by' => 'questions', 'is defined by' => 'definition'}
   VIEW_READY_CONNECTION_SUBTYPES = VIEW_READY_FORWARD_CONNECTION_SUBTYPES.merge VIEW_READY_BACKWARD_CONNECTION_SUBTYPES

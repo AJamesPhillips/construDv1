@@ -132,7 +132,7 @@
 	
 	
 	CSD.controller.element.currently_editing.element_selected = function ( selected_element_html_id ) {
-		
+		alert(selected_element_html_id);
 	};
 	
 

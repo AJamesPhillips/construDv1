@@ -6,9 +6,9 @@
 
 
 //############################### 
-//###############################    DATA MANAGER   //gets the data from the wbesite if it's not available to the models
-//############################### 	
-	
+//###############################	DATA MANAGER	//gets the data from the wbesite if it's not available to the models
+//###############################
+
 	CSD.data_manager.helper = {};
 	CSD.data_manager.helper.new_data_holder = function () {
 		var a_data_holder = {};
@@ -60,8 +60,7 @@
 				
 				CSD.data_manager.add_data(data);
 				//d/ alert('I am ready noiw! and array_of_elements_ids_to_get is_array = ' + (AJP.u.is_array(array_of_elements_ids_to_get)) + ' typeof = ' + (typeof array_of_elements_ids_to_get));
-				
-				
+
 				
 				// check each element is now available
 				for (i = 0; i < len; i += 1) {
@@ -85,7 +84,6 @@
 		} else {
 			console.log('invalid request\n  Array_of_elements_ids_to_get of ' + array_of_elements_ids_to_get + ' is empty.  # in CSD.data_manager.get_data_by_ajax');
 		}
-		
 		
 //  	$.getScript("http://localhost:3000/elements/" + id_of_element_to_get + ".js", function(data, textStatus){
 //  	   console.log(data); //data returned

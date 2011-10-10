@@ -1,10 +1,6 @@
 /*global CSD, AJP*/ // Used by JSLint to exclude CSD from search of undefined variables and functions.
 
 
-
-//$(function () {    
-
-
 //############################### 
 //###############################    MODEL   
 //############################### 
@@ -62,6 +58,7 @@
 		var is_a_statement_node = (is_a_node && (specification.subtype === 'statement'));
 		var is_a_reference_node = (is_a_node && (specification.subtype === 'reference'));
 		var is_a_sub_statement_node = (is_a_node && (specification.subtype === 'sub-statement'));
+		var is_an_answer_node = (is_a_node && (specification.subtype === 'answer'));
 		
 		var is_a_connection = (specification.element_type === 'connection');
 		var is_a_questioning_connection = (is_a_connection && (specification.subtype === 'questions'));
@@ -87,28 +84,47 @@
 		is_a_sub_statement_node_q = function () {
 			return is_a_sub_statement_node;
 		},
-		is_an_answer_node_q = function (id_of_question_node) {
-			var connections_from_this_potential_answer_node = the_new_element.connections_from_this_element();
-			var i = 0, len = connections_from_this_potential_answer_node.length;
-			
-			if (id_of_question_node) {
-				//loop through each connection from this element (which should be a statement node @TODO, maybe check this before doing these loops?) and see if it has a 
+		is_an_answer_node_q = function () {
+			return is_an_answer_node;
+		},
+		is_an_answer_node_for_question = function (id_of_question_node) {
+			if (is_an_answer_node) {
+				var connections_from_this_answer_node = the_new_element.connections_from_this_element();
+				var i = 0, len = connections_from_this_answer_node.elements.length;
+				
+				//loop through each connection from this answer element and see if it has 
 				// connection that links it to a question of the same id as that provided in id_of_question_node
 				for (i=0; i < len; i += 1) {
-					if (connections_from_this_potential_answer_node[i].connects_from() === id_of_question_node) {
-						return true;
-					}
-				};
-					
-			} else {
-				//loop through each connection from the statement node and see if it is_a_connection_from_an_answer 
-				for (i=0; i < len; i += 1) {
-					if (connections_from_this_potential_answer_node[i].is_a_connection_from_an_answer_q()) {
+					if (connections_from_this_answer_node.elements[i].connects_from() === id_of_question_node) {
 						return true;
 					}
 				};
 			}
-			
+			return false;
+		},
+		which_question_id_is_this_an_answer_for = function () {
+			if (is_an_answer_node) {
+				var connections_from_this_answer_node = the_new_element.connections_from_this_element();
+				var i = 0, len = connections_from_this_answer_node.elements.length;
+				var a_connection;
+				var resulting_question_id = []; // should only be 0 or 1 answers here as one answer can only belong to one question
+				
+				//loop through each connection from this element and see if it has any
+				// connections that are 'connections_from_an_answer' and return the id it links to. @TODO implement server side 
+				// protection against one answer belonging to multiple questions.
+				for (i=0; i < len; i += 1) {
+					a_connection = connections_from_this_answer_node.elements[i];
+					if (a_connection.is_a_connection_from_an_answer_q()) {
+						resulting_question_id.push(a_connection.connects_to());
+					}
+				};
+				if (resulting_question_id.length > 1) {
+					console.log('error in .is_an_answer_node_for_which_question_id().  The answer of id: "' + specification.id + '" belongs to more than one question.');
+					return resulting_question_id; // this should mess things up loudly rather than quietly.
+				} else {
+					return resulting_question_id[0];
+				}
+			}
 			return false;
 		},
 		
@@ -172,14 +188,14 @@
 			return CSD.model.connection_elements_for_an_element(the_new_element).connections__to__this_element;
 		},
 		render_in_html = undefined,
-		parts = function (options) {
-			return CSD.model.parts_of_a_node(the_new_element, options);
+		parts = function () {
+			return CSD.model.parts_of_a_node(the_new_element);
 		},
 		connection_elements_for_this_node_and_its_parts = function () {
 			if (is_a_node) {
 				var an_array_of_starting_elements = [];
 				an_array_of_starting_elements.push(the_new_element);
-				an_array_of_starting_elements = an_array_of_starting_elements.concat(the_new_element.parts());
+				an_array_of_starting_elements = an_array_of_starting_elements.concat(the_new_element.parts().elements);
 				return CSD.model.connection_elements_for_multiple_elements(an_array_of_starting_elements);				
 			} else {
 				console.log("'An element whose id is: '" + specification.id + "' and whose type is: '" + specification.element_type + "' had its .connection_elements_for_this_node_and_its_parts method called, but this is only valid for elements of type node")
@@ -251,6 +267,10 @@
 			is_a_statement_node_q:			                 is_a_statement_node_q,
 			is_a_reference_node_q:			                 is_a_reference_node_q,
 			is_a_sub_statement_node_q:		                 is_a_sub_statement_node_q,
+			is_an_answer_node_q:							 is_an_answer_node_q,
+			is_an_answer_node_for_question:					 is_an_answer_node_for_question,
+			which_question_id_is_this_an_answer_for:		 which_question_id_is_this_an_answer_for,
+			
 			
 			is_a_connection_q:				                 is_a_connection_q,
 			is_a_connection_from_an_answer_q:	             is_a_connection_from_an_answer_q,
@@ -298,10 +318,6 @@
 				return the_node_it_belongs_to.content().slice(part_element_start_point, part_element_end_point);
 			};
 		}
-		
-		
-
-		
 		
 		return the_new_element;
 	};
@@ -517,6 +533,7 @@
 	
 	//find all the parts for a node
 	CSD.model.parts_of_a_node = function(the_node, options) {
+		var results = {elements: [], ids: []};
 		//test if this element is actually a node.
 		if (the_node.is_a_node_q()) {
 			
@@ -524,8 +541,6 @@
 			var i = 0, len = ids_of_elements_linked_with_the_element.length;
 			var id_of_element_linked_with_the_element;
 			var element_linked_with_the_element;
-			var ids_of_parts_for_this_node = [];
-			var part_elements_for_this_node = [];
 			
 			for(i = 0; i < len; i += 1) {
 				id_of_element_linked_with_the_element = ids_of_elements_linked_with_the_element[i];
@@ -536,32 +551,20 @@
 					
 					//filter the elements linked to this node by whether they are of the element_type of 'part' or not.
 					if (element_linked_with_the_element.element_type() === 'part') {
-						ids_of_parts_for_this_node.push(element_linked_with_the_element.id());
-						part_elements_for_this_node.push(element_linked_with_the_element);
+						results.ids.push(element_linked_with_the_element.id());
+						results.elements.push(element_linked_with_the_element);
 					}
 				} catch (e) {
 					console.log("Element of id: '" + id_of_element_linked_with_the_element + "' has not been requested from mothership so is unavailable for the CSD.model.parts_of_a_node function to look at   # in 'CSD.model.parts_of_a_node'");
 				}
 			} // finish for loop
 			
-			//return the elements linked to this node that are 'part' element_types 
-			if (options === 'return_ids') {
-				return ids_of_parts_for_this_node;
-			} else if (options === 'return_both') {
-				return {elements: part_elements_for_this_node,
-						ids: ids_of_parts_for_this_node};
-			} else if ((!options) || (options === 'return_elements')){
-				return part_elements_for_this_node;
-			} else {
-				throw {
-					name: 'invalid options',
-					message: 'options = ' + options + ' but can only be undefined, return_ids, return_elements, or return_both  #in CSD.model.parts_of_a_node'
-				};
-			}
 		} else {
 			console.log('CSD.model.parts_of_a_node was called on a non-node element of id: ' + the_node.id());
-			return [];
+			
 		}
+		//return the elements linked to this node that are 'part' element_types
+		return results;
 	};
 	
 	
@@ -666,6 +669,58 @@
 	
 	
 	
+	// if the_element.type() === node, it only finds elements that are either connections to the 
+	// discussion_element or are parts, or if the_element.type() === connection then only nodes 
+	// connected from the discussion_element, or connections to it.
+	CSD.model.elements_beneath_this_element = function (the_element, degrees_of_connection, elements_and_ids_obtained_so_far) {
+		var new_elements_beneath_this_element = the_element.connections__to__this_element();
+		if (degrees_of_connection === undefined) {
+			degrees_of_connection = 1;
+		} // else, leave degrees_of_connection alone.
+		elements_and_ids_obtained_so_far = elements_and_ids_obtained_so_far || {elements: [], ids: []};
+		
+		
+		if (the_element.is_a_node_q()) {
+			var parts = the_element.parts();
+			new_elements_beneath_this_element.elements = new_elements_beneath_this_element.elements.concat(parts.elements);
+			new_elements_beneath_this_element.ids = new_elements_beneath_this_element.ids.concat(parts.ids);
+			
+		} else if (the_element.is_a_connection_q()) {
+			var connects_from = the_element.connects_from();
+			var connecting_from_node = CSD.model.get_element_by_id(connects_from);
+			new_elements_beneath_this_element.elements.push(connecting_from_node);
+			new_elements_beneath_this_element.ids.push(connects_from);
+		}
+		
+		//check that all of the new_elements_beneath_this_element have not already been found
+		new_elements_beneath_this_element.elements = new_elements_beneath_this_element.elements.remove_array(elements_and_ids_obtained_so_far.elements);
+		new_elements_beneath_this_element.ids = new_elements_beneath_this_element.ids.remove_array(elements_and_ids_obtained_so_far.ids);
+		
+		//now add any remaining, and genuinely newly discovered elements to the list of elements discovered so far.
+		elements_and_ids_obtained_so_far.elements = elements_and_ids_obtained_so_far.elements.concat(new_elements_beneath_this_element.elements);
+		elements_and_ids_obtained_so_far.ids = elements_and_ids_obtained_so_far.ids.concat(new_elements_beneath_this_element.ids);
+		
+		degrees_of_connection -= 1;
+		
+		var more_elements = [];
+		var i = 0, len = new_elements_beneath_this_element.elements.length;
+		var an_element;
+		if (degrees_of_connection !== 0) {
+			for (i=0; i < len; i += 1) {
+				an_element = new_elements_beneath_this_element.elements[i];
+				more_results = CSD.model.elements_beneath_this_element(an_element, degrees_of_connection, elements_and_ids_obtained_so_far);
+				
+				elements_and_ids_obtained_so_far.elements = elements_and_ids_obtained_so_far.elements.concat(more_results.elements);
+				elements_and_ids_obtained_so_far.ids = elements_and_ids_obtained_so_far.ids.concat(more_results.ids);
+			}
+		}
+		
+		return new_elements_beneath_this_element;
+	};
+	
+	
+	
+	
 	
 	CSD.model.get_element_by_id = function (id_of_element_to_get) {
 		var the_element = CSD.data.element_by_id[id_of_element_to_get];
@@ -739,12 +794,6 @@
 		return array_of_missing_element_ids;
 	};
 	
-
-	
-	
-//});
-
-
 	
 
 

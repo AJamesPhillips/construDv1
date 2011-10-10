@@ -9,17 +9,20 @@ div.element_outer {
     z-index: 1;
     position: relative; /*needed for z-index to work.*/
 	background-color: white; /*needed for the horizontal element-outers to block their horizontal connection symbols from view*/
+	padding: 0 10px 0 0;
 }
 div.element_middle {
 	background-color: white;
 	border: 1px solid #A9A9A9;
 	border-radius: 2px;
 	display: inline-block;
+	padding: 0 5px;
+	width: 100%;
 }
 div.element_inner {
 	word-wrap: break-word;
-	padding: 0 5px;
     display:inline-block; /*shrinks div to fit text */
+   	width: 100%;
 }
 
 
@@ -154,6 +157,7 @@ div.horizontal_connection > div.symbol_container {
     border-top: thin solid transparent; 
     border-bottom: thin solid transparent;
     height: 13px;
+    left: 1px;
 }
 
 
@@ -169,8 +173,6 @@ div.supports, div.definition {
 div.horizontal_connection > div.symbol_container > div > div.supports,
 div.horizontal_connection > div.symbol_container > div > div.definition {
     background-color: transparent;
-    left: 0px;
-    top: -6px;
 }
 div.vertical_connection > div.symbol_container > div > div.supports,
 div.vertical_connection > div.symbol_container > div > div.definition {
