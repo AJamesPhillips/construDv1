@@ -447,28 +447,7 @@
 	AJP.u.safely_add(AJP.u, 'af', AJP.u.accessor_function); //set alias for AJP.u.accessor_function to AJP.u.af
 	
 	AJP.u.safely_add(AJP.u.af, 'array', function (optional_initialising_value) {
-		var convert_input = function (input) {
-			var result = undefined;
-			if (input !== undefined) {
-				if (AJP.u.is_array(input)) {
-					result = input.slice(0); //.slice(0) copies the array
-				} else {
-					console.log('ERROR:  AJP.u.af.array  was expecting an array but has been give an input of: ' + input + ' which is a typeof: ' + (typeof input));
-				}
-			}
-			return result;
-		};
-		
-		var an_array = convert_input(optional_initialising_value);
-		return function (array_to_save) {
-			if (array_to_save) {
-				an_array = convert_input(array_to_save);
-			} else if (array_to_save === false) {
-				an_array = [];
-			} else {
-				return convert_input(an_array);
-			}
-		};
+		return AJP.u.af_debug.array(optional_initialising_value, false);
 	});
 	
 	
@@ -487,6 +466,8 @@
 			if (number_to_save) {
 				a_number = convert_input(number_to_save);
 			} else if (number_to_save === false) {
+				alert('debug number error');
+			} else if (number_to_save === 'undefine this') {
 				a_number = undefined;
 			} else {
 				return convert_input(a_number);
@@ -502,7 +483,9 @@
 			if (string_to_save) {
 				a_string = String(string_to_save);
 			} else if (string_to_save === false) {
-				a_string = undefined;  //@TODO need to test this to make sure String(undefined) returns undefined
+				alert('debug string error');
+			} else if (string_to_save === 'undefine this') {
+				a_string = undefined;
 			} else {
 				return String(a_string);
 			}
@@ -537,7 +520,135 @@
 	
 	
 	
+	// ####################
+	// Accessor functions with Debugging support
+	// ####################
 	
+	
+	AJP.u.safely_add(AJP.u, 'debugging_accessor_function', {});
+	AJP.u.safely_add(AJP.u, 'af_debug', AJP.u.debugging_accessor_function); //set alias for AJP.u.debugging_accessor_function to AJP.u.af_debug
+	
+	AJP.u.safely_add(AJP.u.af_debug, 'array', function (optional_initialising_value, debugging_link_version) {
+		var convert_input = function (input) {
+			var result = undefined;
+			if (input !== undefined) {
+				if (AJP.u.is_array(input)) {
+					result = input.slice(0); //.slice(0) copies the array
+				} else {
+					console.log('ERROR:  AJP.u.af.array  was expecting an array but has been give an input of: ' + input + ' which is a typeof: ' + (typeof input));
+				}
+			}
+			return result;
+		};
+		
+		var an_array = convert_input(optional_initialising_value);
+		var debug_link = an_array.slice(0);
+		var the_function = function (array_to_save) {
+			if (array_to_save) {
+				an_array = convert_input(array_to_save);
+				debug_link = an_array.slice(0);
+			} else if (array_to_save === false) {
+				alert('debug array error');
+			} else if (array_to_save === 'undefine this') {
+				an_array = undefined;
+				debug_link = undefined;
+			} else {
+				return convert_input(an_array);
+			}
+		};
+		
+		if (debugging_link_version) {
+			return [the_function, debug_link];
+		} else {
+			return (function (array_to_save) {
+				if (array_to_save) {
+					an_array = convert_input(array_to_save);
+				} else if (array_to_save === false) {
+					alert('debug array error');
+				} else if (array_to_save === 'undefine this') {
+					an_array = undefined;
+				} else {
+					return convert_input(an_array);
+				}
+			});
+		}
+	});
+	
+	
+	AJP.u.safely_add(AJP.u.af_debug, 'number', function (optional_initialising_value) {
+		var convert_input = function (input) {
+			var result = undefined;
+			if (input !== undefined) {
+				result = Number(input);
+			}
+			return result;
+		};
+		
+		var a_number = convert_input(optional_initialising_value);
+		
+		return function (number_to_save) {
+			if (number_to_save) {
+				a_number = convert_input(number_to_save);
+			} else if (number_to_save === false) {
+				alert('debug number error');
+			} else if (number_to_save === 'undefine this') {
+				a_number = undefined;
+			} else {
+				return convert_input(a_number);
+			}
+		};
+	});	
+	
+	
+	AJP.u.safely_add(AJP.u.af_debug, 'string', function (optional_initialising_value) {
+		var a_string = String(optional_initialising_value);
+		
+		return function (string_to_save) {
+			if (string_to_save) {
+				a_string = String(string_to_save);
+			} else if (string_to_save === false) {
+				alert('debug string error');
+			} else if (string_to_save === 'undefine this') {
+				a_string = undefined;
+			} else {
+				return String(a_string);
+			}
+		};
+	});	
+	
+	
+	
+	
+	// if initialised with nothing,  i.e. var a = AJP.u.af.booleeann()  //# a === undefined     if initialised with something else then, it's true or false
+	AJP.u.safely_add(AJP.u.af_debug, 'booleeann', function (optional_initialising_value) {
+		var convert_input = function (input) {
+			var result = undefined;
+			if (input !== undefined) {
+				result = !!input;
+			}
+			return result;
+		};
+		
+		var a_boolean = convert_input(optional_initialising_value);
+		
+		return function (boolean_to_save) {
+			if ((boolean_to_save === true) || (boolean_to_save === false)) {
+				a_boolean = convert_input(boolean_to_save);  //@TODO check this works.
+			} else if (boolean_to_save === 'undefine this') {
+				a_boolean = undefined;
+			} else {
+				return convert_input(a_boolean);
+			}
+		};
+	});
+	
+	
+	
+	
+	
+	// ####################
+	// 
+	// ####################
 	
 	
 	AJP.u.add_attributes_from_object(AJP.utilities, {

@@ -1,4 +1,5 @@
 <%# this is only used by the pages#index view %>
+<%= render 'shared/error_messages', :object => @element %>
 <% @element.subtype = 'question' %>
 Create New discussion Question:
 <%= render 'fields' %>

@@ -46,24 +46,27 @@
 		var connection_ids, connects_from_element_id, connects__to__element_id;
 		
 		//set the 'is_a_...' variables
-		var is_a_connection_from_an_answer = false;
-		if ((specification.subtype) && (specification.subtype.indexOf('answer') !== -1)) {
-			//this connection connects to a question, 
-			// from a statement that is proposed as an answer.
-			is_a_connection_from_an_answer = true;
-			specification.subtype = specification.subtype.replace(/answer /, '');
-		}
+		//var is_a_connection_from_an_answer = false;
+		//if ((specification.subtype) && (specification.subtype.indexOf('answer') !== -1)) {
+		//	//this connection connects to a question, 
+		//	// from a statement that is proposed as an answer.
+		//	is_a_connection_from_an_answer = true;
+		//	specification.subtype = specification.subtype.replace(/answer /, '');
+		//}
 		var is_a_node = (specification.element_type === 'node');
 		var is_a_question_node = (is_a_node && (specification.subtype === 'question'));
 		var is_a_statement_node = (is_a_node && (specification.subtype === 'statement'));
 		var is_a_reference_node = (is_a_node && (specification.subtype === 'reference'));
 		var is_a_sub_statement_node = (is_a_node && (specification.subtype === 'sub-statement'));
-		var is_an_answer_node = (is_a_node && (specification.subtype === 'answer'));
+		var is_an_answer_node = (is_a_node && (specification.subtype.indexOf('answer') !== -1));
+		var is_a_pro_answer  = (is_an_answer_node && (specification.subtype.indexOf('pro') !== -1));
+		var is_a_dn_answer   = (is_an_answer_node && (specification.subtype.indexOf('dn') !== -1));
+		var is_an_anti_answer = (is_an_answer_node && (specification.subtype.indexOf('anti') !== -1));
 		
 		var is_a_connection = (specification.element_type === 'connection');
-		var is_a_questioning_connection = (is_a_connection && (specification.subtype === 'questions'));
-		var is_a_supporting_connection = (is_a_connection && (specification.subtype === 'supports'));
-		var is_a_refuting_connection = (is_a_connection && (specification.subtype === 'refutes'));
+		//var is_a_questioning_connection = (is_a_connection && (specification.subtype === 'questions'));
+		//var is_a_supporting_connection = (is_a_connection && (specification.subtype === 'supports'));
+		//var is_a_refuting_connection = (is_a_connection && (specification.subtype === 'refutes'));
 		
 		var is_a_part_element = (specification.element_type === 'part');
 		
@@ -87,62 +90,73 @@
 		is_an_answer_node_q = function () {
 			return is_an_answer_node;
 		},
+		is_a_pro_answer_node_q = function () {
+			return is_a_pro_answer;
+		},
+		is_a_dn_answer_node_q = function () {
+			return is_a_dn_answer;
+		},
+		is_an_anti_answer_node_q = function () {
+			return is_an_anti_answer;
+		},
+		
 		is_an_answer_node_for_question = function (id_of_question_node) {
 			if (is_an_answer_node) {
-				var connections_from_this_answer_node = the_new_element.connections_from_this_element();
-				var i = 0, len = connections_from_this_answer_node.elements.length;
+				var iel_links = the_new_element.ids_of_linked_elements();
 				
-				//loop through each connection from this answer element and see if it has 
-				// connection that links it to a question of the same id as that provided in id_of_question_node
-				for (i=0; i < len; i += 1) {
-					if (connections_from_this_answer_node.elements[i].connects_from() === id_of_question_node) {
-						return true;
-					}
-				};
+				//loop through each link from this answer element and see if it is a 
+				// question of the same id as that provided in id_of_question_node
+				var result = iel_links.match( [id_of_question_node] );
+				if (result.length === 1) {
+					return result[1];
+				} else if (result.length > 1) {
+					console.log('ERROR detected. Answer id: "' + specification.id + '" has more than one question: "' + result + '"   #in CSD.model.is_an_answer_node_for_question')
+					return result[0];
+				}
 			}
 			return false;
 		},
 		which_question_id_is_this_an_answer_for = function () {
 			if (is_an_answer_node) {
-				var connections_from_this_answer_node = the_new_element.connections_from_this_element();
-				var i = 0, len = connections_from_this_answer_node.elements.length;
-				var a_connection;
-				var resulting_question_id = []; // should only be 0 or 1 answers here as one answer can only belong to one question
+				var iel_links = the_new_element.ids_of_linked_elements();
+				var i = 0, len = iel_links.length;
+				var a_link;
+				var an_element;
+				var resulting_question_id = [];
 				
-				//loop through each connection from this element and see if it has any
-				// connections that are 'connections_from_an_answer' and return the id it links to. @TODO implement server side 
 				// protection against one answer belonging to multiple questions.
 				for (i=0; i < len; i += 1) {
-					a_connection = connections_from_this_answer_node.elements[i];
-					if (a_connection.is_a_connection_from_an_answer_q()) {
-						resulting_question_id.push(a_connection.connects_to());
+					a_link = iel_links[i];
+					an_element = CSD.model.get_element_by_id( a_link );
+					if (an_element.is_a_question_node_q()) {
+						resulting_question_id.push(an_element.id());
 					}
 				};
 				if (resulting_question_id.length > 1) {
 					console.log('error in .is_an_answer_node_for_which_question_id().  The answer of id: "' + specification.id + '" belongs to more than one question.');
 					return resulting_question_id; // this should mess things up loudly rather than quietly.
-				} else {
+				} else if (resulting_question_id.length === 1) {
 					return resulting_question_id[0];
 				}
 			}
-			return false;
+			return false; // this should mess things up loudly rather than quietly.
 		},
 		
 		is_a_connection_q = function () {
 			return is_a_connection;
 		},
-		is_a_connection_from_an_answer_q = function () {
-			return is_a_connection_from_an_answer;
-		},
-		is_a_questioning_connection_q = function () {
-			return is_a_questioning_connection;
-		},
-		is_a_supporting_connection_q = function () {
-			return is_a_supporting_connection;
-		},
-		is_a_refuting_connection_q = function () {
-			return is_a_refuting_connection;
-		},
+		//is_a_connection_from_an_answer_q = function () {
+		//	return is_a_connection_from_an_answer;
+		//},
+		//is_a_questioning_connection_q = function () {
+		//	return is_a_questioning_connection;
+		//},
+		//is_a_supporting_connection_q = function () {
+		//	return is_a_supporting_connection;
+		//},
+		//is_a_refuting_connection_q = function () {
+		//	return is_a_refuting_connection;
+		//},
 		
 		is_a_part_element_q = function () {
 			return is_a_part_element;
@@ -202,9 +216,9 @@
 				return {connections_from_this_node_and_its_parts: [], connections__to__this_node_and_its_parts: [] };
 			}
 		},
-		answer_connections_and_nodes_for_this_question = function () {
+		answer_nodes_for_this_question = function () {
 			if (is_a_question_node) {
-				return CSD.model.answer_connections_and_nodes_for_a_question(the_new_element);
+				return CSD.model.answer_nodes_for_a_question(the_new_element);
 			} else {
 				console.log('this is not a question node, but the element of id = ' + specification.id + ' had its answer_connections_and_nodes_for_this_question() function called  #in CSD.model.element');
 			}
@@ -260,7 +274,7 @@
 			render_in_html:					                 render_in_html,
 			parts:							                 parts,
 			connection_elements_for_this_node_and_its_parts: connection_elements_for_this_node_and_its_parts,
-			answer_connections_and_nodes_for_this_question:	 answer_connections_and_nodes_for_this_question,
+			answer_nodes_for_this_question:	 				 answer_nodes_for_this_question,
 			
 			is_a_node_q:					                 is_a_node_q,
 			is_a_question_node_q:							 is_a_question_node_q,
@@ -268,15 +282,19 @@
 			is_a_reference_node_q:			                 is_a_reference_node_q,
 			is_a_sub_statement_node_q:		                 is_a_sub_statement_node_q,
 			is_an_answer_node_q:							 is_an_answer_node_q,
+			is_a_pro_answer_node_q:							 is_a_pro_answer_node_q,
+			is_a_dn_answer_node_q:							 is_a_dn_answer_node_q,
+			is_an_anti_answer_node_q:						 is_an_anti_answer_node_q,
+			
 			is_an_answer_node_for_question:					 is_an_answer_node_for_question,
 			which_question_id_is_this_an_answer_for:		 which_question_id_is_this_an_answer_for,
 			
 			
 			is_a_connection_q:				                 is_a_connection_q,
-			is_a_connection_from_an_answer_q:	             is_a_connection_from_an_answer_q,
-			is_a_questioning_connection_q:	                 is_a_questioning_connection_q,
-			is_a_supporting_connection_q:	                 is_a_supporting_connection_q,
-			is_a_refuting_connection_q:		                 is_a_refuting_connection_q,
+			//is_a_connection_from_an_answer_q:	             is_a_connection_from_an_answer_q,
+			//is_a_questioning_connection_q:	                 is_a_questioning_connection_q,
+			//is_a_supporting_connection_q:	                 is_a_supporting_connection_q,
+			//is_a_refuting_connection_q:		                 is_a_refuting_connection_q,
 			
 			is_a_part_element_q:							 is_a_part_element_q};
 		
@@ -603,65 +621,46 @@
 	
 	
 	
-	CSD.model.answer_connections_and_nodes_for_a_question = function (the_question_node) {
-		//find if the node has any connections to it
-		var connections_to_this_question = the_question_node.connections__to__this_element();
+	CSD.model.answer_nodes_for_a_question = function (the_question_node) {
+		//find if the question node has any links to it
+		var links_to_this_question = the_question_node.ids_of_linked_elements();
 		
 		//sort those which are results.answer_nodes from those which are not
-		var i = 0, len = connections_to_this_question.ids.length;
-		var a_connection;
+		var i = 0, len = links_to_this_question.length;
+		var an_element;
 		var results = { answer_nodes: {				total: 0,
-													supporting: 	{elements: [], ids: []}, 
-													questioning: 	{elements: [], ids: []}, 
-													refuting:  		{elements: [], ids: []}
+													pro: 	{elements: [], ids: []}, 
+													dn: 	{elements: [], ids: []}, 
+													anti:  	{elements: [], ids: []}
 									  },
-						answer_connections__to__this_element: {		total: 0,
-												 					supporting: 	{elements: [], ids: []}, 
-																	questioning: 	{elements: [], ids: []}, 
-																	refuting:  		{elements: [], ids: []}
-															  },
 						non_answer_connections__to__this_element: []
 					  };
 		
-		var an_answer_node;
-		
 		for (i=0; i < len; i += 1) {
-			a_connection = connections_to_this_question.elements[i - results.answer_nodes.total];
-			if (a_connection.is_a_connection_from_an_answer_q()) {
-				//remove this connection element from the connections_to_this_question and add it to the results.answer_nodes
-				connections_to_this_question.elements.splice((i - results.answer_nodes.total),1);
-				connections_to_this_question.ids.splice((i - results.answer_nodes.total),1);
-				
+			an_element = CSD.model.get_element_by_id(links_to_this_question[i]);// - results.answer_nodes.total];
+			if (an_element.is_an_answer_node_q()) {
 				results.answer_nodes.total += 1;
-				// get the answer_node that the 'a_connection' connects_from
-				an_answer_node = CSD.model.get_element_by_id(a_connection.connects_from());
-				
 				//separate answer connections into supporting, questioning and refuting
-				if (a_connection.is_a_supporting_connection_q()) {
-					results.answer_nodes.supporting.elements.push(an_answer_node);
-					results.answer_nodes.supporting.ids.push(an_answer_node.id());
-					results.answer_connections__to__this_element.supporting.elements.push(a_connection);
-					results.answer_connections__to__this_element.supporting.ids.push(a_connection.id());
+				if (an_element.is_a_pro_answer_node_q()) {
+					results.answer_nodes.pro.elements.push(an_element);
+					results.answer_nodes.pro.ids.push(an_element.id());
 					
-				} else if (a_connection.is_a_questioning_connection_q()) {
-					results.answer_nodes.questioning.elements.push(an_answer_node);
-					results.answer_nodes.questioning.ids.push(an_answer_node.id());
-					results.answer_connections__to__this_element.questioning.elements.push(a_connection);
-					results.answer_connections__to__this_element.questioning.ids.push(a_connection.id());
+				} else if (an_element.is_a_dn_answer_node_q()) {
+					results.answer_nodes.dn.elements.push(an_element);
+					results.answer_nodes.dn.ids.push(an_element.id());
 					
-				} else if (a_connection.is_a_refuting_connection_q()) {
-					results.answer_nodes.refuting.elements.push(an_answer_node);
-					results.answer_nodes.refuting.ids.push(an_answer_node.id());
-					results.answer_connections__to__this_element.refuting.elements.push(a_connection);
-					results.answer_connections__to__this_element.refuting.ids.push(a_connection.id());
+				} else if (an_element.is_an_anti_answer_node_q()) {
+					results.answer_nodes.anti.elements.push(an_element);
+					results.answer_nodes.anti.ids.push(an_element.id());
+					
 				} else {
-					console.log('unsupported answer connection subtype: ' + a_connection.subtype() + ' #in CSD.views.render_node_as_question_format_in_html');
+					console.log('unsupported answer node subtype: ' + an_element.subtype() + ' #in CSD.views.render_node_as_question_format_in_html');
 				}
+			} else if (an_element.is_a_connection_q()) {
+				//add "non-answer" connections to the results
+				results.non_answer_connections__to__this_element.push(an_element);
 			}
 		} // end of for loop
-		
-		//add "non-answer" connections to the results
-		results.non_answer_connections__to__this_element = connections_to_this_question;
 		
 		return results;
 	};
@@ -673,39 +672,41 @@
 	// discussion_element or are parts, or if the_element.type() === connection then only nodes 
 	// connected from the discussion_element, or connections to it.
 	CSD.model.elements_beneath_this_element = function (the_element, degrees_of_connection, elements_and_ids_obtained_so_far) {
-		var new_elements_beneath_this_element = the_element.connections__to__this_element();
+		elements_and_ids_obtained_so_far = elements_and_ids_obtained_so_far || {elements: [], ids: []};
 		if (degrees_of_connection === undefined) {
 			degrees_of_connection = 1;
 		} // else, leave degrees_of_connection alone.
-		elements_and_ids_obtained_so_far = elements_and_ids_obtained_so_far || {elements: [], ids: []};
 		
-		
-		if (the_element.is_a_node_q()) {
-			var parts = the_element.parts();
-			new_elements_beneath_this_element.elements = new_elements_beneath_this_element.elements.concat(parts.elements);
-			new_elements_beneath_this_element.ids = new_elements_beneath_this_element.ids.concat(parts.ids);
+		if (degrees_of_connection > 0) {
+			degrees_of_connection -= 1;
+			var new_elements_beneath_this_element = the_element.connections__to__this_element();
 			
-		} else if (the_element.is_a_connection_q()) {
-			var connects_from = the_element.connects_from();
-			var connecting_from_node = CSD.model.get_element_by_id(connects_from);
-			new_elements_beneath_this_element.elements.push(connecting_from_node);
-			new_elements_beneath_this_element.ids.push(connects_from);
-		}
+			if (the_element.is_a_node_q()) {
+				var parts = the_element.parts();
+				new_elements_beneath_this_element.elements = new_elements_beneath_this_element.elements.concat(parts.elements);
+				new_elements_beneath_this_element.ids = new_elements_beneath_this_element.ids.concat(parts.ids);
+				
+			} else if (the_element.is_a_connection_q()) {
+				var connects_from = the_element.connects_from();
+				var connecting_from_node = CSD.model.get_element_by_id(connects_from);
+				new_elements_beneath_this_element.elements.push(connecting_from_node);
+				new_elements_beneath_this_element.ids.push(connects_from);
+			}
+			
+			//check that all of the new_elements_beneath_this_element have not already been found
+			new_elements_beneath_this_element.elements = new_elements_beneath_this_element.elements.remove_array(elements_and_ids_obtained_so_far.elements);
+			new_elements_beneath_this_element.ids = new_elements_beneath_this_element.ids.remove_array(elements_and_ids_obtained_so_far.ids);
+			
+			//now add any remaining, and genuinely newly discovered elements to the list of elements discovered so far.
+			elements_and_ids_obtained_so_far.elements = elements_and_ids_obtained_so_far.elements.concat(new_elements_beneath_this_element.elements);
+			elements_and_ids_obtained_so_far.ids = elements_and_ids_obtained_so_far.ids.concat(new_elements_beneath_this_element.ids);
+			
+			
+			
+			var more_elements = [];
+			var i = 0, len = new_elements_beneath_this_element.elements.length;
+			var an_element;
 		
-		//check that all of the new_elements_beneath_this_element have not already been found
-		new_elements_beneath_this_element.elements = new_elements_beneath_this_element.elements.remove_array(elements_and_ids_obtained_so_far.elements);
-		new_elements_beneath_this_element.ids = new_elements_beneath_this_element.ids.remove_array(elements_and_ids_obtained_so_far.ids);
-		
-		//now add any remaining, and genuinely newly discovered elements to the list of elements discovered so far.
-		elements_and_ids_obtained_so_far.elements = elements_and_ids_obtained_so_far.elements.concat(new_elements_beneath_this_element.elements);
-		elements_and_ids_obtained_so_far.ids = elements_and_ids_obtained_so_far.ids.concat(new_elements_beneath_this_element.ids);
-		
-		degrees_of_connection -= 1;
-		
-		var more_elements = [];
-		var i = 0, len = new_elements_beneath_this_element.elements.length;
-		var an_element;
-		if (degrees_of_connection !== 0) {
 			for (i=0; i < len; i += 1) {
 				an_element = new_elements_beneath_this_element.elements[i];
 				more_results = CSD.model.elements_beneath_this_element(an_element, degrees_of_connection, elements_and_ids_obtained_so_far);
@@ -715,7 +716,10 @@
 			}
 		}
 		
-		return new_elements_beneath_this_element;
+		elements_and_ids_obtained_so_far.elements = elements_and_ids_obtained_so_far.elements.unique();
+		elements_and_ids_obtained_so_far.ids = elements_and_ids_obtained_so_far.ids.unique();
+		
+		return elements_and_ids_obtained_so_far;
 	};
 	
 	
@@ -749,23 +753,7 @@
 		return the_belief_state;
 	};
 	
-	
-	
-	CSD.model.ensure_array_of_elements_are_available_or_retrieve_them_and_then_call_function = function (array_of_element_ids_to_get, degrees_of_view, function_to_call_once_data_is_available) {
-		var array_of_missing_element_ids = [];
-		
-		// iterate over array_of_element_ids_to_get, getting each using  CSD.data.element_by_id[ an_id ];
-		//	if it returns undefined, then add it to the list of ids to get from data_manager	
-		array_of_missing_element_ids = CSD.model.identify_unavailable_elements(array_of_element_ids_to_get, degrees_of_view);
-		
-		if (array_of_missing_element_ids.length !== 0) {
-			CSD.data_manager.get_data_by_ajax(array_of_missing_element_ids, function_to_call_once_data_is_available);
-			return false;
-		} else {
-			return true;
-		}
-	};
-	
+
 	
 	CSD.model.identify_unavailable_elements = function (array_of_element_ids_to_get, degrees_of_view) {
 		//returns an array of element_ids that are in the array_of_element_ids_to_get but that are not present in the list of elements.

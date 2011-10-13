@@ -10,7 +10,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20111001010546) do
+ActiveRecord::Schema.define(:version => 20111012125355) do
 
   create_table "belief_states", :force => true do |t|
     t.integer  "user_id",                           :null => false
@@ -25,16 +25,20 @@ ActiveRecord::Schema.define(:version => 20111001010546) do
   add_index "belief_states", ["user_id"], :name => "index_belief_states_on_user_id"
 
   create_table "elements", :force => true do |t|
-    t.string   "element_type",                    :null => false
+    t.string   "element_type",                     :null => false
     t.string   "subtype"
     t.string   "content"
-    t.integer  "user_id",                         :null => false
-    t.boolean  "archived",     :default => false
+    t.integer  "user_id",                          :null => false
+    t.boolean  "archived",      :default => false
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.boolean  "public",       :default => false
+    t.boolean  "public",        :default => false
+    t.integer  "connects_from"
+    t.integer  "connects_to"
   end
 
+  add_index "elements", ["connects_from"], :name => "index_elements_on_connects_from"
+  add_index "elements", ["connects_to"], :name => "index_elements_on_connects_to"
   add_index "elements", ["user_id"], :name => "index_elements_on_user_id"
 
   create_table "inter_element_links", :id => false, :force => true do |t|

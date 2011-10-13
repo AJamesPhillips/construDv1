@@ -46,9 +46,26 @@
 	
 	
 	
+	CSD.data_manager.ensure_array_of_elements_are_available_or_retrieve_them_and_then_call_function = function (array_of_element_ids_to_get, degrees_of_view, function_to_call_once_data_is_available, parameters_for_function) {
+		var array_of_missing_element_ids = [];
+		
+		// iterate over array_of_element_ids_to_get, getting each using  CSD.data.element_by_id[ an_id ];
+		//	if it returns undefined, then add it to the list of ids to get from data_manager	
+		array_of_missing_element_ids = CSD.model.identify_unavailable_elements(array_of_element_ids_to_get, degrees_of_view);
+		
+		if (array_of_missing_element_ids.length !== 0) {
+			CSD.data_manager.get_data_by_ajax(array_of_missing_element_ids, function_to_call_once_data_is_available, parameters_for_function);
+			return false;
+		} else {
+			return true;
+		}
+	};
+	
+	
+	
 	// array_of_elements_ids_to_get  will be in the form of N-n,N-n,N-n Where N is the id of 
 	//  the element to get and 'n' is the degrees of view around that element.
-	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available, parameter1, parameter2) {  //, degrees_of_neighbours) {
+	CSD.data_manager.get_data_by_ajax = function (array_of_elements_ids_to_get, function_to_call_once_data_is_available, parameters_for_function) {  //, degrees_of_neighbours) {
 		// implement AJAX for single element request
 		if (array_of_elements_ids_to_get.length !== 0) {
 			$.getJSON(("/elements/" + array_of_elements_ids_to_get + ".json"), function(data) {
@@ -78,7 +95,7 @@
 				}
 				
 				if (all_elements_are_now_present) {
-					CSD.helper.call_provided_function(function_to_call_once_data_is_available, parameter1, parameter2);
+					CSD.helper.call_provided_function(function_to_call_once_data_is_available, parameters_for_function);
 				}
 			});
 		} else {

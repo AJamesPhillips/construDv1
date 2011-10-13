@@ -82,6 +82,8 @@ class ElementsController < ApplicationController
           @elements[0].make_inter_element_link(@elements[1])
           @elements[1].make_inter_element_link(@elements[2])
 
+          ##update the belief states
+          @elements[2].refresh_belief_states
           
         else
           logger.error ">>> @elements[1].save  did not work  #in create_multiple of elements_controller"
@@ -111,13 +113,20 @@ class ElementsController < ApplicationController
   
   def create
     @element = current_user.elements.build(params[:element])
-    logger.debug ">>> element = #{@element.attributes}    # in 'index' of 'ElementsController'"
+    logger.debug ">>> @element.attributes = #{@element.attributes}    # in 'index' of 'ElementsController'"
+    logger.debug "||| @element.errors = #{@element.errors}    # in 'index' of 'ElementsController'"
+    logger.debug ">>> @element.valid? = #{@element.valid?}    # in 'index' of 'ElementsController'"
+    logger.debug "||| @element.errors = #{@element.errors}    # in 'index' of 'ElementsController'"
     if @element.save
+      logger.debug ">>> @element.save = true    # in 'index' of 'ElementsController'"
       flash[:success] = "New Discussion Element Created"
+      @element.refresh_belief_states
+      
       redirect_to @element
     else
+      logger.debug ">>> @element.save = false    # in 'index' of 'ElementsController'"
       flash[:warning] = "An error occured"
-      #@elements = current_user.elements.paginate(:page => params[:page])  ## @TODO is there a better way?
+      @elements = []
       render 'pages/index' #root_path
     end
   end
@@ -169,17 +178,38 @@ class ElementsController < ApplicationController
       ##check there's only one id being requested:
       if !(params[:id].include? ',')
         @root_element_id = params[:id].to_i
-        #d# 
-        logger.debug ">>>  @root_element_id = #{@root_element_id}  # in show of elements_controller"
-        @root_element = Element.find(@root_element_id)
+        @degree_of_view = 0
+        @degree_of_view = params[:id].split('-')[1].to_i if params[:id].include? '-'
+        @element_ids = [@root_element_id]
+      else
+        ## there is more than one id being requested, remove any "degrees_of_view"  i.e. make elements/4-3,2-3,87-2 into 4,2,87
+        @degree_of_view = 0
+        params[:id].gsub!(/-[^,]*/,'')
+        logger.debug ">>>  params[:id].gsub!(/-[^,]*/,'') = #{params[:id]}  # in show of elements_controller"
+        @element_ids = params[:id].split(',')
+        @root_element_id = @element_ids[0]  ## arbitrarily set the root_element_id as the first id.
         
-        ##quickly test that this isn't a request for a question element, else modify the request to have 6 degrees of view
-        logger.debug ">>>   @root_element.is_a_question_node? = #{@root_element.is_a_question_node?}  # in show of elements_controller"
-        if @root_element.is_a_question_node?
-          params[:id] = @root_element_id.to_s + '-6';
-        end
-        #d# 
-        logger.debug ">>>  params[:id] = #{params[:id]}  # in show of elements_controller"
+      end
+      logger.debug ">>>  @root_element_id = #{@root_element_id}  # in show of elements_controller"
+      @root_element = Element.find(@root_element_id)
+      ##quickly test that this isn't a request for a question element, else modify the request to have 6 degrees of view
+      logger.debug ">>>   @root_element.is_a_question_node? = #{@root_element.is_a_question_node?}  # in show of elements_controller"
+      if @root_element.is_a_question_node?
+        @degree_of_view = 6
+        #params[:id] = @root_element_id.to_s + '-6';
+      end
+      logger.debug ">>>  params[:id] = #{params[:id]}  # in show of elements_controller"
+      
+    elsif request.format == 'application/json'
+      @degree_of_view = 0
+      if (params[:id].include? ',')
+        ## there is more than one id being requested, remove any "degrees_of_view"  i.e. make elements/4-3,2-3,87-2 into 4,2,87
+        params[:id].gsub!(/-[^,]*/,'')
+        @element_ids = params[:id].split(',')
+        
+      else
+        @element_ids = [params[:id].to_i]
+        @degree_of_view = params[:id].split('-')[1].to_i if (params[:id].include? '-')
       end
     end
     
@@ -190,6 +220,36 @@ class ElementsController < ApplicationController
     ## @TODO SO BAD.. Absolutely Bags of room here for optimising this...(I hope).  I think this needs to have more SELECT IN  SQL queries, though see how it's currently being implemented... I suspect it will be as many separate SELECT queries.
     ## @TODO check for security holes, what if someone puts something crazy as an element id, it will be taken as a strong and converted into a symbol that's latter used to find elements_by_id
     
+    logger.debug ">>>  request.format = #{request.format},  @element_ids = #{@element_ids},  @degree_of_view = #{@degree_of_view},  @root_element_id = #{@root_element_id}  # in show of elements_controller"
+    @element_ids.uniq!
+    
+    @degree_of_view = 6 if @degree_of_view > 6
+    @degree_of_view = 0 if @degree_of_view < 0
+    @degree_of_view += 1
+    @elements = []
+    @element_links = []
+    @element_ids.each {|element_id|
+      element = Element.find(element_id)
+      inter_element_links = element.inter_element_links
+      elements = [element]
+#=begin      
+      @degree_of_view.times {
+        inter_element_links.each {|link| elements.concat(link.elements) } #unless inter_element_links.empty
+        elements.uniq!
+        elements.each {|element| inter_element_links.concat(element.inter_element_links) } #unless elements.empty?
+        break if (inter_element_links.uniq!.nil?)   ## saves time when element_degree is large but element(s) aren't connected to enough so it's not going anywhere.
+      }
+#=end      
+      @elements.concat elements
+      @elements.uniq!
+      @element_links.concat inter_element_links
+      @element_links.uniq!
+    }
+    
+    logger.debug ">>>  @elements = #{@elements},  @element_links = #{@element_links}  # in show of elements_controller"
+    
+    
+=begin    
     #d# 
     logger.debug ">>>  params = #{params}  # in show of elements_controller"
     
@@ -227,7 +287,8 @@ class ElementsController < ApplicationController
     ##now go through each element_id (the keys) of @element_ids and loop over, collecting their iel_linked elements
     @elements = []
     @element_links = []
-    
+
+
     @element_ids.each {|element_id, element_degree|
       elements = [Element.find(element_id)]
       inter_element_links = elements[0].inter_element_links
@@ -258,10 +319,15 @@ class ElementsController < ApplicationController
     logger.debug ">>>  @elements = #{@elements}  # in show of elements_controller"
     logger.debug ">>>  @element_links = #{@element_links}  # in show of elements_controller"
     
-    
     ## take each element and get it's id value into an array_of_element_ids
     @array_of_element_ids = @elements.map {|element| element.id }
+    
+=end
+    
+    
+    @array_of_element_ids = @elements.map {|element| element.id }
     logger.debug ">>>  @array_of_element_ids = #{@array_of_element_ids}  # in show of elements_controller"
+    logger.debug ">>>  @elements = #{@elements.map {|element| element.id }}  # in show of elements_controller"
     
     
     

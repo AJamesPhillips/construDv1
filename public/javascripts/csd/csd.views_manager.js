@@ -21,9 +21,9 @@
 	CSD.views_manager.answer_discussion_contexts = function () {
 		return ['pro', 'dn', 'anti'];
 	};
-	CSD.views_manager.eqivalent_intent_names = function () {
-		return ['supporting', 'questioning', 'refuting'];
-	};
+	//CSD.views_manager.eqivalent_intent_names = function () {
+	//	return ['supporting', 'questioning', 'refuting'];
+	//};
 	CSD.views_manager.all_discussion_contexts = function () {
 		return CSD.views_manager.answer_discussion_contexts().concat(['general', 'question']);
 	};
@@ -32,22 +32,34 @@
 	CSD.session.view = {};
 	CSD.session.view.type = 'as_general'; // 'as_general'  or 'as_question'
 
-	CSD.session.view.general =  {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'main_discussion_container', 		minimised: AJP.u.af.booleeann(true)};   
-	CSD.session.view.question = {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'discussion_definition', 			minimised: AJP.u.af.booleeann(true)};
-	CSD.session.view.pro =  	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'pro_side_discussion_container',  minimised: AJP.u.af.booleeann(true), all_answer_ids: AJP.u.af.array([])};
-	CSD.session.view.dn =   	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'dn_side_discussion_container',   minimised: AJP.u.af.booleeann(true), all_answer_ids: AJP.u.af.array([])};
-	CSD.session.view.anti = 	{root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: 'anti_side_discussion_container', minimised: AJP.u.af.booleeann(true), all_answer_ids: AJP.u.af.array([])};
+	var i = 0;
+	var contexts = CSD.views_manager.all_discussion_contexts();
+	var len = contexts.length;
+	
+	for (i=0; i < len; i += 1) {
+		CSD.session.view[contexts[i]] = {root_element_id: AJP.u.af.number(undefined), ids_in_view: AJP.u.af.array([]), author_ids: AJP.u.af.array([]), html_id_of_view_container: '', 		minimised: AJP.u.af.booleeann(true)};
+	};
+	CSD.session.view.general.html_id_of_view_container = 'main_discussion_container';
+	CSD.session.view.question.html_id_of_view_container = 'discussion_definition';
+	CSD.session.view.pro.html_id_of_view_container = 'pro_side_discussion_container';
+	CSD.session.view.pro.all_answer_ids = AJP.u.af.array([]);
+	CSD.session.view.dn.html_id_of_view_container = 'dn_side_discussion_container';
+	CSD.session.view.dn.all_answer_ids = AJP.u.af.array([]);
+	CSD.session.view.anti.html_id_of_view_container = 'anti_side_discussion_container';
+	CSD.session.view.anti.all_answer_ids = AJP.u.af.array([]);
+	
+	
 	//n.b. for pro, dn and anti, if root_element_id === NaN, and all_answer_ids === [], there is no know answer for the question posed
 	//							 if root_element_id === undefined, and all_answer_ids === [some-ids], there are several answers, and one has yet to be chosen for display
 	//							 if root_element_id === some-id, and all_answer_ids === [], there  is only 1 answers, and it's chosen for display
 	//							 if root_element_id === some-id, and all_answer_ids === [some-ids], there are several answers and 1 has been chosen for display
 	
 	
-
-
 	
 	
-	CSD.views_manager.set_view_as_question = function (question_node_id, do_not_update_view_to_find_answers) {
+	
+	
+	CSD.views_manager.set_view_as_question = function (question_node_id){//, do_not_update_view_to_find_answers) {
 		CSD.session.view.type = 'as_question';
 		CSD.session.view.question.minimised(false);
 		CSD.session.view.general.minimised(true);
@@ -66,28 +78,24 @@
 		
 		//find any answers to this question and display them in their appropriate contexts
 		var the_question_node = CSD.model.get_element_by_id(question_node_id);
-		var results = the_question_node.answer_connections_and_nodes_for_this_question();
+		var results = the_question_node.answer_nodes_for_this_question();
 		var answer_nodes = results.answer_nodes;
-		var answer_connection_ids = []
 		
-		// do all processing for each side of the discussion
+		//get the names of the discussion sides (should be pro, dn and anti)
 		var sides = CSD.views_manager.answer_discussion_contexts();
-		var sides2 = CSD.views_manager.eqivalent_intent_names();
 		var side;
 		var i = 0, len = sides.length;
 		
+		// do all processing for each side of the discussion
 		for (i=0; i < len; i += 1) {
-			//collect all answer_connection_ids
-			answer_connection_ids = answer_connection_ids.concat( results.answer_connections__to__this_element[sides2[i]].ids );
-			
-			if (!do_not_update_view_to_find_answers) {
+			//if (!do_not_update_view_to_find_answers) {
 				side = sides[i];
 				
 				//set the minimised values for each view context  to false;
 				CSD.session.view[side].minimised(false);
 				
 				//if there is are only one answer for this discussion side, then set this as the root element_id
-				var answers_for_this_side = answer_nodes[sides2[i]];
+				var answers_for_this_side = answer_nodes[sides[i]];
 				var number_of_answers_for_this_side = answers_for_this_side.ids.length
 				if (number_of_answers_for_this_side === 0) {
 					CSD.session.view[side].root_element_id( undefined );
@@ -102,7 +110,7 @@
 					CSD.session.view[side].all_answer_ids( answers_for_this_side.ids );
 					CSD.views_manager.add__multiple_elements_to_a_degree_of_linkage_to_a_view_context( answers_for_this_side.ids, side, 0);
 				}
-			}
+			//}
 		}
 		
 		//d/
@@ -111,9 +119,6 @@
 		var c2_debug = CSD.session.view.pro.ids_in_view();
 		var d2_debug = CSD.session.view.dn.ids_in_view();
 		var e2_debug = CSD.session.view.anti.ids_in_view();
-		
-		//remove the answer connection ids from being in the 'question' view context
-		CSD.session.view.question.ids_in_view( CSD.session.view.question.ids_in_view().remove_array(answer_connection_ids) );
 		
 	};
 	
@@ -136,7 +141,7 @@
 //	};
 	
 	
-	CSD.views_manager.set_view_as_general = function (a_discussion_element_id) {
+	CSD.views_manager.set_view_as_general = function (a_discussion_element_id, degrees_of_view) {
 		CSD.session.view.type = 'as_general';
 		CSD.session.view.general.minimised(false);
 		CSD.session.view.question.minimised(true);
@@ -145,8 +150,21 @@
 		CSD.session.view.anti.minimised(true);
 		
 		CSD.session.view.general.root_element_id( a_discussion_element_id );
-
-		CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context(a_discussion_element_id, 'general', 4);
+		//d/
+		var a3_debug = CSD.session.view.general.ids_in_view();
+		var b3_debug = CSD.session.view.question.ids_in_view();
+		var c3_debug = CSD.session.view.pro.ids_in_view();
+		var d3_debug = CSD.session.view.dn.ids_in_view();
+		var e3_debug = CSD.session.view.anti.ids_in_view();
+		
+		CSD.views_manager.add_element_and_degrees_of_linkage_to_a_view_context(a_discussion_element_id, 'general', degrees_of_view);
+		
+		//d/
+		var a4_debug = CSD.session.view.general.ids_in_view();
+		var b4_debug = CSD.session.view.question.ids_in_view();
+		var c4_debug = CSD.session.view.pro.ids_in_view();
+		var d4_debug = CSD.session.view.dn.ids_in_view();
+		var e4_debug = CSD.session.view.anti.ids_in_view();
 	};
 	
 	

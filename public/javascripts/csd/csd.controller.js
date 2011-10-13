@@ -19,7 +19,7 @@
 	}; //  end of   CSD.controller.display_discussion
 	
 	
-	CSD.controller.necessary_data_is_available = function (function_to_call_once_data_is_available) {
+	CSD.controller.necessary_data_is_available = function (function_to_call_once_data_is_available, parameters_for_function) {
 		var array_of_required_element_ids = [];
 		if (CSD.session.view.type === 'as_general') {
 			array_of_required_element_ids = array_of_required_element_ids.concat(CSD.session.view.general.ids_in_view());
@@ -47,7 +47,7 @@
 		array_of_required_element_ids = array_of_required_element_ids.unique().remove(undefined);
 		
 		//test to make sure we have all the necessary elements in local access
-		if (CSD.model.ensure_array_of_elements_are_available_or_retrieve_them_and_then_call_function( array_of_required_element_ids, CSD.views_manager.minimum_buffer_degrees_of_view(), function_to_call_once_data_is_available)) {
+		if (CSD.data_manager.ensure_array_of_elements_are_available_or_retrieve_them_and_then_call_function( array_of_required_element_ids, CSD.views_manager.minimum_buffer_degrees_of_view(), function_to_call_once_data_is_available, parameters_for_function)) {
 			return true;
 		} else {
 			//we don't have the necessary elements yet.
@@ -101,7 +101,9 @@
     	
     	CSD.views_manager.add_elements(ids_of_more_elements_to_show_in_view, discussion_context);
     	
-    	CSD.controller.necessary_data_is_available(CSD.views.show_view(discussion_context));
+    	if (CSD.controller.necessary_data_is_available(CSD.views.show_view, discussion_context)) {
+    		CSD.views.show_view(discussion_context);
+    	};
     	//CSD.routes.refresh();  //@TODO is this the right place to put it?
 	};
 	
@@ -150,37 +152,6 @@
 		CSD.views.options.editing_panel.visibilty(CSD.session.editing);
 	};
 	
-//############################### 
-//###############################    HELPER   
-//############################### 
-	
-	CSD.helper.call_provided_function = function (function_to_call) {
-		var debugging_info__function_calling_from;// = "The function was called from the top!";
-		if (CSD.helper.call_provided_function.caller === null) {
-			debugging_info__function_calling_from = "The function was called from the top!";
-		} else {
-			debugging_info__function_calling_from = "This function's caller was " + CSD.helper.call_provided_function.caller;
-		}
-		
-		if (arguments.callee.caller === null) {
-			debugging_info__function_calling_from = "The function was called from the top!";
-		} else {
-			debugging_info__function_calling_from = "This function's caller was " + arguments.callee.caller;
-		}
-		
-		console.log('debugging_info__function_calling_from = ' + debugging_info__function_calling_from);
-		
-		if (typeof function_to_call === 'function') {
-			function_to_call();
-		} else {
-			throw {
-				name: 'no function to call',
-				message: "the typeof 'function_to_call_once_data_is_available' = " + (typeof function_to_call) + " #in " + debugging_info__function_calling_from
-			};
-		}
-	};
-	
-//});
 
 
 

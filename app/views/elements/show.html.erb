@@ -1,8 +1,8 @@
 <div id="discussion_options">
 	<input id="edit_discussion" class="option_button" type="submit" value="edit" />
-	<input id="copy_link_to_current_discussion" class="option_button" type="submit" value="copy link" onclick="alert('Functionality to build');" />
-	<input id="hide_to_and_from_links" class="option_button" type="submit" value="hide to / from" onclick="alert('Functionality to build');" />
-	<input id="debug" class="option_button" type="submit" value="hide to / from" onclick="alert('general = ' + CSD.session.view.general.minimised() + '\nquestion = ' + CSD.session.view.question.minimised() + '\n pro = ' + CSD.session.view.pro.minimised() + '\n dn = ' + CSD.session.view.dn.minimised() + '\n anti = ' + CSD.session.view.anti.minimised());" />
+	<input id="copy_link_to_current_discussion" class="option_button display-none" type="submit" value="copy link" onclick="alert('Functionality to build');" />
+	<input id="hide_to_and_from_links" class="option_button display-none" type="submit" value="hide to / from" onclick="alert('Functionality to build');" />
+	<input id="debug" class="option_button" type="submit" value="debugging info" onclick="alert('CSD.session.view[context]\ngeneral = ' + CSD.session.view.general.minimised() + '\nquestion = ' + CSD.session.view.question.minimised() + '\n pro = ' + CSD.session.view.pro.minimised() + '\n dn = ' + CSD.session.view.dn.minimised() + '\n anti = ' + CSD.session.view.anti.minimised());" />
 </div>
 <div class="divClear"></div>
 <div id="discussion_definition" >
@@ -39,7 +39,7 @@
 			<% if @root_element.is_a_question_node? %>
 				CSD.views_manager.set_view_as_question(<%= @root_element_id %>);
 			<% else %>
-				CSD.views_manager.set_view_as_general(<%= @root_element_id %>);
+				CSD.views_manager.set_view_as_general(<%= @root_element_id %>, <%= @degree_of_view -1 %>);
 			<% end %>
 			//CSD.views_manager.set_view(<%= @session_view.to_json.html_safe %>);
 			//CSD.views_manager.add_elements(<%= @array_of_element_ids.to_json.html_safe %>); //[1,5,7,14,13,15,16,17,19,20,21,2,4]

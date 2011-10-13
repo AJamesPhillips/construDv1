@@ -318,8 +318,8 @@
 		
 		//if content_for_part_node has been supplied, then we're rendering a part node as a root
 		//  if we didn't change anything then it would look like an element, so instead
-		//  save a selection, selecting this content as if it were an element (but without changing the div id
-		//  to that of that parent element id - which might confuse things later in development, dunno)
+		//  save a selection, selecting this content as if it were an element (but with the div id
+		//	equal to the part node id rather than to that of that parent node element id - which otherwise might confuse things)
 		//n.b. this temporary selection will be over written once the parent of this part node is displayed
 		if (content_for_part_node) {
 			CSD.session.save_selection(the_node.id(), 0, content_for_part_node.length, the_node.id(), 'discussion_node_part');
@@ -597,6 +597,21 @@
 		var author_ids = CSD.session.view[discussion_context].author_ids();
 		//see if this element has any of those authors and, if so, what they believe the state of this element is
 		var authors_of_belief_states_for_element = CSD.model.get_belief_states_by_element_id( the_element.id() );
+		
+		
+		//define a function to set the 'many' and 'consensus' labels for how many authors hold a belief
+		var set_belief_level = function (belief_number) {
+			switch (belief_number) {
+				case 1: // do nothing
+					return '';
+				case 2:
+					return ' some';
+				default:
+					return ' many';
+			}
+		};
+		
+		
 		//check authors_of_belief_states_for_element !== undefined, as not all element will have belief states
 		if (authors_of_belief_states_for_element !== undefined) {
 			var i = 0, len = author_ids.length;
@@ -622,19 +637,20 @@
 				
 			} else if ((sum.t === 0) && (sum.f === 0)) {
 				//mark as 'unsure'
-				the_element_div.addClass(' ' + 'unsure');
+				the_element_div.addClass(' ' + 'unsure' + set_belief_level(sum.d) );
 				
 			} else if ((sum.t === 0) && (sum.d === 0)) {
 				//mark as 'believed_false'
-				the_element_div.addClass(' ' + 'believed_false');
+				the_element_div.addClass(' ' + 'believed_false' + set_belief_level(sum.f) );
 				
 			} else if ((sum.f === 0) && (sum.d === 0)) {
 				//mark as 'believed_true'
-				the_element_div.addClass(' ' + 'believed_true');
+				the_element_div.addClass(' ' + 'believed_true' + set_belief_level(sum.t) );
 				
 			} else {
 				//mark as 'dispute'
-				the_element_div.addClass(' ' + 'dispute');
+				var max = Math.max(sum.t, sum.d, sum.f);
+				the_element_div.addClass(' ' + 'dispute' + set_belief_level(max) );
 				
 			}
 		}

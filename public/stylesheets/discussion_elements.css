@@ -167,7 +167,7 @@ div.horizontal_connection > div.symbol_container {
 
 
 div.supports, div.definition {
-    font-size: 0.85em;
+    font-size: 0.87em;
     
 }
 div.horizontal_connection > div.symbol_container > div > div.supports,
@@ -237,28 +237,30 @@ div.dispute.unanswered > div.symbol_container {
 div.element_middle.believed_true {
 	background-color: #cfb;
 }
-	div.element_middle.believed_true.many {
-		background-color: #af9;
+	div.element_middle.believed_true.some {
+		background-color: #8f5;
 	}
-	div.element_middle.believed_true.consensus {
-		background-color: #8f6;
+	div.element_middle.believed_true.many {
+		background-color: #44AA00;
+		border-color: #44FF00;
+		color: #ddeedd;
 	}
 div.element_middle.believed_false {
 	background-color: #bcf;
 }
-	div.element_middle.believed_false.many {
+	div.element_middle.believed_false.some {
 		background-color: #9bf;
 	}
-	div.element_middle.believed_false.consensus {
+	div.element_middle.believed_false.many {
 		background-color: #58f;
 	}
 div.element_middle.unsure {
 	background-color: #ddb;
 }
-	div.element_middle.unsure.many {
+	div.element_middle.unsure.some {
 		background-color: #dd8;
 	}
-	div.element_middle.unsure.consensus {
+	div.element_middle.unsure.many {
 		background-color: #fc6;
 	}
 /*
@@ -277,6 +279,13 @@ div.element_middle.dispute.unanswered {
 div.element_middle.dispute {
 	background-color: #fdd;
 }
+	div.element_middle.dispute.some {
+		background-color: #fa9;
+	}
+	div.element_middle.dispute.many {
+		background-color: #f54;
+	}
+
 
 
 
