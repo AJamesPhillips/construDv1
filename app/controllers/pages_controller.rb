@@ -5,13 +5,13 @@ class PagesController < ApplicationController
   def home
     @title = "Home"
     @elements =[]#User.first.elements
-    
-    #@oe2 = current_user.elements.other_elements(47).connections_to(47).all
-    
-    #@e = Element.find(61)
-    #logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    #logger.debug(">>> @e = #{@e} \n    @oe2 = #{@oe2}  #in home of PagesController")
-    #@e.refresh_belief_states
+    @e = Element.find(193)#.eager_load_belief_states
+    logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    logger.debug(">>>   #in home of PagesController"+
+                 "      @e = #{@e} ")
+    #logger.debug(">>> @e = #{@e[0].belief_states} #in home of PagesController\n\n")
+    Element.refresh_belief_states(@e, 2)
+    logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
   end
 
   def help

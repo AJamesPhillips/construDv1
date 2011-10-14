@@ -43,6 +43,7 @@ class ElementsController < ApplicationController
     end
     prepare_node_or_parts_for_creation(0)
     prepare_node_or_parts_for_creation(2)
+    logger.debug ">>>   after prepare_node_or_parts_for_creation   @elements = #{@elements}   #in create_multiple of elements_controller"
     
     
     ##prepare connection for creation
@@ -51,49 +52,46 @@ class ElementsController < ApplicationController
     @elements[1] = current_user.elements.build(params[:elements][1])
     
     
-    ##check all elements for errors if any, then return without saving
-    if @elements[0].valid? && @elements[1].valid? && @elements[2].valid?
-      ##save elements[0] and elements[2], then use their ids to populate elements[1].content for the connections
-      ## finally, create the necessary iels
+    ##save elements[0] and elements[2], then use their ids to populate elements[1].content for the connections
+    ## finally, create the necessary iels
+    
+    logger.debug ">>> @elements[0].id_of_parent_of_part_element = #{@elements[0].id_of_parent_of_part_element}, @elements[2].id_of_parent_of_part_element = #{@elements[2].id_of_parent_of_part_element}   #in create_multiple of elements_controller"
+    
+    if @elements[0].save && @elements[2].save
+      ##set up the connection element's content
+      logger.debug ">>>     @elements[1].content = #{@elements[1].content}  before   #in create_multiple of elements_controller"
+      @elements[1].content = "#{@elements[0].id},#{@elements[2].id}"
+      logger.debug ">>>     @elements[1].content = #{@elements[1].content}  after    #in create_multiple of elements_controller"
       
-      logger.debug ">>> @elements[0].id_of_parent_of_part_element = #{@elements[0].id_of_parent_of_part_element}, @elements[2].id_of_parent_of_part_element = #{@elements[2].id_of_parent_of_part_element}   #in create_multiple of elements_controller"
-      
-      if @elements[0].save && @elements[2].save
-        ##set up the connection element's content
-        @elements[1].content = "#{@elements[0].id},#{@elements[2].id}"
+      ## save the connection element
+      if @elements[1].save
+        ##make the necessary iels
+        ##check @elements[0] and @elements[2] for id_of_parent_of_part_element
+        logger.debug ">>> @elements[0].id_of_parent_of_part_element = #{@elements[0].id_of_parent_of_part_element}, @elements[2].id_of_parent_of_part_element = #{@elements[2].id_of_parent_of_part_element}   #in create_multiple of elements_controller"
         
-        ## save the connection element
-        if @elements[1].save
-          ##make the necessary iels
-          ##check @elements[0] and @elements[2] for id_of_parent_of_part_element
-          logger.debug ">>> @elements[0].id_of_parent_of_part_element = #{@elements[0].id_of_parent_of_part_element}, @elements[2].id_of_parent_of_part_element = #{@elements[2].id_of_parent_of_part_element}   #in create_multiple of elements_controller"
-          
-          ##new_iel_link for element[0] to it's parent node, if it's a part element
-          if @elements[0].is_a_part_element? && !@elements[0].id_of_parent_of_part_element.nil?
-            parent_element = Element.find(@elements[0].id_of_parent_of_part_element)
-            @elements[0].make_inter_element_link(parent_element)
-          end
-          
-          if @elements[2].is_a_part_element? && !@elements[2].id_of_parent_of_part_element.nil?
-            parent_element = Element.find(@elements[2].id_of_parent_of_part_element)
-            @elements[2].make_inter_element_link(parent_element)
-          end
-          
-          @elements[0].make_inter_element_link(@elements[1])
-          @elements[1].make_inter_element_link(@elements[2])
-
-          ##update the belief states
-          @elements[2].refresh_belief_states
-          
-        else
-          logger.error ">>> @elements[1].save  did not work  #in create_multiple of elements_controller"
+        ##new_iel_link for element[0] to it's parent node, if it's a part element
+        if @elements[0].is_a_part_element? && !@elements[0].id_of_parent_of_part_element.nil?
+          parent_element = Element.find(@elements[0].id_of_parent_of_part_element)
+          @elements[0].make_inter_element_link(parent_element)
         end
         
+        if @elements[2].is_a_part_element? && !@elements[2].id_of_parent_of_part_element.nil?
+          parent_element = Element.find(@elements[2].id_of_parent_of_part_element)
+          @elements[2].make_inter_element_link(parent_element)
+        end
+        
+        @elements[0].make_inter_element_link(@elements[1])
+        @elements[1].make_inter_element_link(@elements[2])
+
+        ##update the belief states
+        @elements[2].refresh_belief_states
+        
       else
-        logger.error ">>> @elements[0].save && @elements[2].save  did not work  #in create_multiple of elements_controller"
+        logger.error ">>> @elements[1].save  did not work  #in create_multiple of elements_controller"
       end
+      
     else
-      ##errors
+      logger.error ">>> @elements[0].save && @elements[2].save  did not work  #in create_multiple of elements_controller"
     end
     
     
@@ -332,8 +330,8 @@ class ElementsController < ApplicationController
     
     
     ## get the believed truth states for each discussion element
-    @belief_states = BeliefStates.not_archived.find_all_by_user_id_and_element_id(@author_ids, @array_of_element_ids) unless (@author_ids.empty? || @array_of_element_ids.empty?)
-    @belief_states = BeliefStates.not_archived.find_all_by_element_id(@array_of_element_ids) unless @array_of_element_ids.empty?
+    @belief_states = BeliefState.not_archived.find_all_by_user_id_and_element_id(@author_ids, @array_of_element_ids) unless (@author_ids.empty? || @array_of_element_ids.empty?)
+    @belief_states = BeliefState.not_archived.find_all_by_element_id(@array_of_element_ids) unless @array_of_element_ids.empty?
 
     respond_to do |format|
       format.html 

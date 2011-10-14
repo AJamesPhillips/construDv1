@@ -1,4 +1,4 @@
-class BeliefStates < ActiveRecord::Base
+class BeliefState < ActiveRecord::Base
   attr_accessible :user_id, :element_id, :believed_state
   
   belongs_to :user

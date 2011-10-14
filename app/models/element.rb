@@ -45,6 +45,7 @@ class Element < ActiveRecord::Base
   
   scope :active,  lambda { where(:archived => false) }
   scope :by_user, lambda {|the_user_id| where(:user_id => the_user_id) }
+  scope :find_by_element_id, lambda {|an_element_id| where(:id => an_element_id) }
   
   scope :nodes,       lambda { where(:element_type => 'node') }
   scope :statements,  lambda { where(:element_type => 'node', :subtype => 'statement') }
@@ -56,21 +57,28 @@ class Element < ActiveRecord::Base
   scope :connections_from, lambda {|element_id| where(:connects_from => element_id) }
   
   scope :part_elements,    lambda { where(:element_type => 'part') }
+  ## return a list of part elements for this node element, by a specific author, or by any author
+  scope :part_elements_for_element_id, lambda {|an_element_id| other_elements(an_element_id).part_elements }
+  scope :part_elements_for_element_id_by_user_id, lambda {|an_element_id, a_user_id| part_elements_for_element_id(an_element_id).by_user(a_user_id) }
+  
   
   scope :iel_1links,     lambda {|seed_element_id| select(%("inter_element_links"."element1_id" as "id")).joins(:inter_element_links2).where(:id => seed_element_id) }
   scope :iel_2links,     lambda {|seed_element_id| select(%("inter_element_links"."element2_id" as "id")).joins(:inter_element_links1).where(:id => seed_element_id) }
   scope :other_elements, lambda {|seed_element_id| where(:id => (iel_1links(seed_element_id) + iel_2links(seed_element_id))) }
   
-  scope :simple__all_active_connections_to_an_element_by_a_user,   lambda {|the_element_id, the_user_id| active.connections_to(the_element_id).by_user(the_user_id) }
+  #scope :simple__all_active_connections_to_an_element_by_a_user,   lambda {|the_element_id, the_user_id| active.connections_to(the_element_id).by_user(the_user_id) }
   scope :robust__all_active_connections__to__an_element,           lambda {|the_element_id| active.other_elements(the_element_id).connections_to(the_element_id) }
   scope :robust__all_active_connections__to__an_element_by_a_user, lambda {|the_element_id, the_user_id| robust__all_active_connections__to__an_element.by_user(the_user_id) }
   
   scope :robust__all_active_connections_from_an_element,           lambda {|the_element_id| active.other_elements(the_element_id).connections_from(the_element_id) }
   scope :robust__all_active_connections_from_an_element_by_a_user, lambda {|the_element_id, the_user_id| robust__all_active_connections_from_an_element.by_user(the_user_id) }
   
-  scope :belief_not_archived,   lambda { where(:belief_states => {:archived => false}) }
-  scope :active_belief_states,  lambda { joins(:belief_states).belief_not_archived }
-  scope :active_belief_states_by_user, lambda {|the_user_id| active_belief_states.where(:user_id => the_user_id) }
+  
+  scope :belief_not_archived,           lambda { where(:belief_states => {:archived => false}) }
+  scope :active_belief_states,          lambda { joins(:belief_states).belief_not_archived }
+  scope :active_belief_states_by_user,  lambda {|the_user_id| active_belief_states.where(:belief_states => {:user_id => the_user_id}) }
+  scope :eager_load_belief_states,      lambda { includes(:belief_states) }
+  
   
   
   def self.search(search)
@@ -139,128 +147,379 @@ class Element < ActiveRecord::Base
   
   
   ## return a list of part elements for this node element, by a specific author, or by any author
-  def parts(user_id)
+  def parts(user_id = nil)
     part_elements = []
     if is_a_node?
       if user_id
-        part_elements = Element.other_elements(self.id).by_user(user_id).part_elements
+        part_elements = Element.part_elements_for_element_id_by_user_id(self.id, user_id)
       else
-        part_elements = Element.other_elements(self.id).part_elements
+        part_elements = Element.part_elements_for_element_id(self.id)
       end
     end
     return part_elements
   end
   
   
+  def set_belief_state(new_state, a_user_id = self.user_id)
+    logger.debug(">>>   # in set_belief_state of element.rb\n" +
+                 "      new_state = #{new_state} ")
+    
+    ##return the change in the state, either returning true if it's changed or returning false if it hasn't
+    current_belief_state = BeliefState.for_element(self.id).by_user(a_user_id).not_archived.first
+    
+    logger.debug(">>>   current_belief_state.nil? = #{current_belief_state.nil?}    # in set_belief_state of element.rb")
+    unless current_belief_state.nil? ##check there is a current_belief_state
+      ##check current state is not equal to new_state.  If it is then do nothing and return nil
+      logger.debug(">>>   (current_belief_state.believed_state (#{current_belief_state.believed_state}) == new_state (#{new_state})) = #{current_belief_state.believed_state == new_state}    \n### in set_belief_state of element.rb")
+      return false if current_belief_state.believed_state == new_state
+    end
+    
+    ## there is no  current_state  or  new_state != current_state  so make the new state and 
+    ##  if it saves successfully, set the old state to archived (if the old state exists) 
+    new_belief_state = BeliefState.new({:element_id => self.id, :user_id => a_user_id, :believed_state => new_state})
+    
+    logger.debug(">>>   new_belief_state = #{new_belief_state}    \n### in set_belief_state of element.rb")
+    if new_belief_state.save!
+      unless current_belief_state.nil?
+        logger.debug(">>>  set_belief_state of element.rb  \n" +
+                     "     current_belief_state.state = #{current_belief_state.believed_state}")
+        current_belief_state.archived = true unless current_belief_state.nil?
+        current_belief_state.save!
+        logger.debug(">>>   current_belief_state.state = #{current_belief_state.believed_state}    # in set_belief_state of element.rb")
+      end
+      return true
+    end
+    
+    
+    return false
+  end
+  
+  
   
   ##user has created an element, make sure this user's elements belief states are up to date.
-  def refresh_belief_states
-    logger.debug(">>>  #in refresh_belief_states of element.id = #{id} for user.id = #{user_id}")
-    if is_a_part_element?
+  def self.refresh_belief_states(an_element, a_user_id, recursion_counter = 0)
+    logger.debug(">>>1   #in refresh_belief_states element.rb  \n" +
+                 "!start!#{recursion_counter} \n" +
+                 "       element.id = #{an_element.id} for user.id = #{a_user_id}")
+    recursion_counter+=1
+    if recursion_counter > 100
+      raise "ERROR   recursion_counter > 100    # in refresh_belief_states of element.rb"
+      return
+    end
+    
+    if an_element.is_a_question_node?
+      ## do nothing
+      
+    elsif an_element.is_a_part_element?
       ##find parent node and call the refresh_belief_states on this
-      Element.find(connects_to).refresh_belief_states
+      logger.debug(">>>1.1a    #in refresh_belief_states element.rb  \n" +
+                   "           we have a part element which connects to: #{an_element.connects_to}  ")      
+      Element.refresh_belief_states(Element.find(an_element.connects_to), a_user_id, recursion_counter)
       
     else
-      elements_beneath = find_elements_beneath_an_element(self, {:belief_user_id => self.user_id, :exclude_elements_beneath_a_nodes_part => false})
+      logger.debug(">>>1.1b    #in refresh_belief_states element.rb  \n" +
+                   "          call to find_connection_elements_beneath_an_element_with_a_belief_state_by_same_user   with ((element id of:) #{an_element.id}, #{{:belief_user_id => a_user_id}})  ")
+      elements_beneath_with_a_belief_state_by_same_user = find_connection_elements_beneath_an_element_with_a_belief_state_by_same_user(an_element, {:belief_user_id => a_user_id})
+      logger.debug(">>>1.2b    #in refresh_belief_states element.rb  \n" +
+                   "           elements_beneath_with_a_belief_state_by_same_user = #{elements_beneath_with_a_belief_state_by_same_user.all}  ")
       
-      #propagate_belief_state(elements_beneath, self, nil)
+      if an_element.is_a_node?
+        additional_elements_beneath_with_a_belief_state_by_same_user = find_elements_beneath_the_part_elements_for_a_node_element_with_a_belief_state_by_same_user(an_element, {:belief_user_id => a_user_id})
+      elsif an_element.is_a_connection?
+        additional_elements_beneath_with_a_belief_state_by_same_user = find_the_node_element_beneath_a_connection_element_with_a_belief_state_by_same_user(an_element, {:belief_user_id => a_user_id})
+      else
+        additional_elements_beneath_with_a_belief_state_by_same_user = []
+      end
+      
+      logger.debug(">>>2    #in refresh_belief_states element.rb  \n" +
+                   "        elements_beneath_with_a_belief_state_by_same_user = #{elements_beneath_with_a_belief_state_by_same_user.all}   additional_elements_beneath_with_a_belief_state_by_same_user = #{additional_elements_beneath_with_a_belief_state_by_same_user.all}  ")
+      
+      if elements_beneath_with_a_belief_state_by_same_user.empty? && additional_elements_beneath_with_a_belief_state_by_same_user.empty?
+        state_changed = an_element.set_belief_state('t', a_user_id)
+        
+      else
+        logger.debug(">>>3   #in refresh_belief_states element.rb  \n" +
+                     "       an_element.type = #{an_element.element_type} ")
+        
+        ##test if this element is a node or connection
+        if an_element.is_a_node?
+          logger.debug(">>>4a   #in refresh_belief_states of element.rb \n" +
+                       "       additional_elements_beneath_with_a_belief_state_by_same_user = #{additional_elements_beneath_with_a_belief_state_by_same_user.all} ")
+          
+          unless elements_beneath_with_a_belief_state_by_same_user.empty?
+            ## this node has connections to it which have belief states by this user
+            logger.debug(">>>5a   #in refresh_belief_states of element.rb \n" +
+                         "       elements_beneath_with_a_belief_state_by_same_user = #{elements_beneath_with_a_belief_state_by_same_user.all}  \n")
+            ##logger.debug("       elements_beneath_with_a_belief_state_by_same_user = #{elements_beneath_with_a_belief_state_by_same_user.belief_states}  ")
+            new_state_to_apply = evaluate_logical_value_of_elements(elements_beneath_with_a_belief_state_by_same_user, a_user_id) unless elements_beneath_with_a_belief_state_by_same_user.empty?
+            logger.debug(">>>5b   #in refresh_belief_states of element.rb \n" +
+                         "       new_state_to_apply = #{new_state_to_apply}  ")
+            state_changed = an_element.set_belief_state(new_state_to_apply[:belief_state], a_user_id) 
+          end
+          
+          unless additional_elements_beneath_with_a_belief_state_by_same_user.empty?
+            ## this node has parts and those has connections to them with belief states by this user
+            new_state_to_apply = evaluate_logical_value_of_elements(additional_elements_beneath_with_a_belief_state_by_same_user, a_user_id)
+            #:belief_state
+            logger.debug(">>>5c   #in refresh_belief_states of element.rb \n" +
+                         "       new_state_to_apply = #{new_state_to_apply}  ")
+            state_changed = an_element.set_belief_state(new_state_to_apply[:belief_state], a_user_id)
+          end
+          
+        elsif an_element.is_a_connection?
+          logger.debug(">>>4b   #in refresh_belief_states of element.rb \n" +
+                       "       elements_beneath_with_a_belief_state_by_same_user = #{elements_beneath_with_a_belief_state_by_same_user.all} ")
+          apply_believed_state_value_of_the_node_this_connection_connects_from = false
+          
+          ## elements_beneath_with_a_belief_state_by_same_user == the connections to this connection
+          if elements_beneath_with_a_belief_state_by_same_user.empty?
+            ##there are not connections to this connection, so use the belief state of the node that this connection connects from
+            ##  (a node that must be present otherwise  additional_elements_beneath_with_a_belief_state_by_same_user.empty? == true
+            ##  and it would have already been assigned the default 't' belief state )
+            apply_believed_state_value_of_the_node_this_connection_connects_from = true
+            
+          else
+            ##there are connections to this connection, so evaluate them.
+            ## if there produce a state change to 't' or 'd' && :d_is_explicit == false, then apply the believed value from the node it connects from  
+            new_state_to_apply = evaluate_logical_value_of_elements(elements_beneath_with_a_belief_state_by_same_user, a_user_id)
+            logger.debug(">>>5b   #in refresh_belief_states of element.rb \n" +
+                         "       new_state_to_apply = #{new_state_to_apply} ")
+            if (new_state_to_apply[:belief_state] == 't') || ((new_state_to_apply[:belief_state] == 'd') && (new_state_to_apply[:d_is_explicit] == false))
+              apply_believed_state_value_of_the_node_this_connection_connects_from = true
+            else
+              state_changed = an_element.set_belief_state(new_state_to_apply[:belief_state], a_user_id)
+            end
+            
+          end
+          
+          if apply_believed_state_value_of_the_node_this_connection_connects_from
+            logger.debug(">>>5c   #in refresh_belief_states of element.rb \n" +
+                         "        additional_elements_beneath_with_a_belief_state_by_same_user.first = #{additional_elements_beneath_with_a_belief_state_by_same_user.first.id} \n" +
+                         "        additional_elements_beneath_with_a_belief_state_by_same_user.first.belief_states = #{additional_elements_beneath_with_a_belief_state_by_same_user.first.belief_states} ")
+            new_state_to_apply = additional_elements_beneath_with_a_belief_state_by_same_user.first.belief_states.first.believed_state
+            logger.debug(">>>5d   #in refresh_belief_states of element.rb \n" +
+                         "        new_state_to_apply to a connection, based solely on the belief state of the node it connects from = #{new_state_to_apply}  ")
+            state_changed = an_element.set_belief_state(new_state_to_apply, a_user_id)
+            
+          end
+          
+        else
+          raise "ERROR: have an element of type: #{an_element.element_type} but was expecting node or connection    #in refresh_belief_states of element.rb"
+        end
+      end
+      
+      logger.debug(">>>6   #in refresh_belief_states of element.rb \n" +
+                   "       state_changed = #{state_changed}  for element.id = #{an_element.id} (a #{an_element.element_type}) ")
+      return unless state_changed
+      
+      ## find if there are any non-question elements above me by any author
+      elements_above_me_by_any_author = find_elements_above_an_element_by_any_author(an_element)
+      logger.debug(">>>7   #in refresh_belief_states of element.rb \n" +
+                   "       elements_above_me_by_any_author = #{elements_above_me_by_any_author}  ")
+      
+      return if elements_above_me_by_any_author.nil?
+      ##iterate through each element above and propagate belief state
+      elements_above_me_by_any_author.each {|element|
+        refresh_belief_states(element, a_user_id, recursion_counter)
+      }
+      
     end
+    
   end
   
   
   
 private
-    def find_elements_beneath_an_element(the_element, options = {}) ##options take  :exclude_elements_beneath_a_nodes_part, :element_user_id, :belief_user_id
-=begin
+    def self.find_connection_elements_beneath_an_element_with_a_belief_state_by_same_user(the_element, options = {}) ##options take  :element_user_id, :belief_user_id
+      
+      logger.debug(">>>   #in find_connection_elements_beneath_an_element_with_a_belief_state_by_same_user  of Element.rb \n"+
+                   "1     the_element.id = #{the_element.id}   options = #{options}    \n"+
+                   "1     options[:belief_user_id] = #{options[:belief_user_id]}  ")
+      #elements_beneath = Element.robust__all_active_connections__to__an_element(the_element.id).active_belief_states
+
       if options[:element_user_id]
-        if options[:belief_user_id}
-          elements_beneath = Element.robust__all_active_connections__to__an_element_by_a_user(the_element.id, options.element_user_id).active_belief_states_by_user(options.belief_user_id)
+        if options[:belief_user_id]
+          elements_beneath = Element.robust__all_active_connections__to__an_element_by_a_user(the_element.id, options[:element_user_id]).active_belief_states_by_user(options[:belief_user_id]).eager_load_belief_states
         else
-          elements_beneath = Element.robust__all_active_connections__to__an_element_by_a_user(the_element.id, options.element_user_id)
+          elements_beneath = Element.robust__all_active_connections__to__an_element_by_a_user(the_element.id, options[:element_user_id])#.eager_load_belief_states
         end
       else
-        if options[:belief_user_id}
-          elements_beneath = Element.robust__all_active_connections__to__an_element(the_element.id).active_belief_states_by_user(options.belief_user_id)
+        if options[:belief_user_id]
+          logger.debug(">>>   #in find_connection_elements_beneath_an_element_with_a_belief_state_by_same_user  of Element.rb \n"+
+                       "2     options[:belief_user_id] = #{options[:belief_user_id]}")
+          elements_beneath = Element.robust__all_active_connections__to__an_element(the_element.id).active_belief_states_by_user(options[:belief_user_id]).eager_load_belief_states
+          logger.debug(">>>   #in find_connection_elements_beneath_an_element_with_a_belief_state_by_same_user  of Element.rb \n"+
+                       "3     elements_beneath =  #{elements_beneath.all}")
         else
-          elements_beneath = Element.robust__all_active_connections__to__an_element(the_element.id)
+          elements_beneath = Element.robust__all_active_connections__to__an_element(the_element.id)#.eager_load_belief_states
         end
       end
-=end      
-      logger.debug(">>>1  elements_beneath = #{elements_beneath.all} for element of id = #{the_element.id}  #in find_elements_beneath_an_element of Element.rb ")
-      
-    end
-=begin      
-      if the_element.is_a_node? ## the_element is a node element which may have part elements associated with it.  If so, and if exclude_elements_beneath_a_nodes_part = false,
-        ##get the elements beneath these parts
-        if options.exclude_elements_beneath_a_nodes_part
-          ## do nothing extra
-        else
-          ##find this nodes parts, and the elements beneath them
-          elements_beneath += the_element.parts(options.user_id).map {|part_element|
-            find_elements_beneath_an_element(part_element, {:user_id => options.user_id})
-          }
-          logger.debug(">>>2  elements_beneath = #{elements_beneath.all} for element of id = #{the_element.id}  #in find_elements_beneath_an_element of Element.rb ")
-          elements_beneath.flatten!
-          logger.debug(">>>3  elements_beneath = #{elements_beneath.all} for element of id = #{the_element.id}  #in find_elements_beneath_an_element of Element.rb ")
-        end
-        
-      elsif the_element.is_a_connection?  ## the_element is a connection, so find the node it connects from and add this to the 'elements_beneath' array
-        unless the_element.connects_from.nil?
-          node = Element.find(the_element.connects_from)
-          if node.nil?
-            logger.error(">>>  data integrity error detected for connection.id = #{id}, whose connects_from value (#{connects_from}) references a non-existant element    #in find_elements_beneath_an_element of Element.rb")
-          else
-            elements_beneath.push node 
-          end
-        end
-      elsif the_element.is_a_part_element?
-        ## do nothing extra
-      else
-        ## error
-        logger.error(">>>  error, element.type = #{the_element.element_type}, for element.id = #{the_element.id}   #in find_elements_beneath_an_element of element.rb")
-      end
-      
-      logger.debug(">>>4  elements_beneath = #{elements_beneath.all} for element of id = #{the_element.id}  #in find_elements_beneath_an_element of Element.rb ")
-      
       return elements_beneath
     end
     
     
+    def self.find_elements_beneath_the_part_elements_for_a_node_element_with_a_belief_state_by_same_user(the_element, options = {}) ##options take  :element_user_id, :belief_user_id
+      logger.debug(">>>1   #in find_elements_beneath_the_part_elements_for_a_node_element_with_a_belief_state_by_same_user of elements.rb\n"+
+                   "     ")
+      if the_element.is_a_node? ## the_element is a node element which may have part elements associated with it.  
+        ##find this nodes parts, and the elements beneath them
+        if options[:element_user_id] ## specifies to only get parts for this element that were created by a particular user.
+          if options[:belief_user_id]
+            elements_beneath_the_elements_parts = Element.part_elements_for_element_id_by_user_id(the_element.id, options[:element_user_id]).robust__all_active_connections__to__an_element_by_a_user(the_element.id, options[:element_user_id]).active_belief_states_by_user(options[:belief_user_id]).eager_load_belief_states
+          else
+            elements_beneath_the_elements_parts = Element.part_elements_for_element_id_by_user_id(the_element.id, options[:element_user_id]).robust__all_active_connections__to__an_element_by_a_user(the_element.id, options[:element_user_id])
+          end
+        else
+          if options[:belief_user_id]
+            elements_beneath_the_elements_parts = Element.part_elements_for_element_id(the_element.id).robust__all_active_connections__to__an_element(the_element.id).active_belief_states_by_user(options[:belief_user_id]).eager_load_belief_states
+          else
+            elements_beneath_the_elements_parts = Element.part_elements_for_element_id(the_element.id).robust__all_active_connections__to__an_element(the_element.id)
+          end
+        end
+        
+        logger.debug(">>>2   #in find_elements_beneath_the_part_elements_for_a_node_element_with_a_belief_state_by_same_user of elements.rb\n"+
+                     "     elements_beneath_the_elements_parts = #{elements_beneath_the_elements_parts.all} ")
+        
+        return elements_beneath_the_elements_parts
+        
+      end
+      return nil
+    end
     
-    def find_elements_above_an_element(the_element, options = {}) ##options take :user_id
+    
+    ##@TODO this feels wrong.  it feels like there might come a time when a connection can connect from another connection, rather than just from a node
+    def self.find_the_node_element_beneath_a_connection_element_with_a_belief_state_by_same_user(the_element, options = {}) ##options take  :element_user_id, :belief_user_id
+        logger.debug(">>>   #in find_the_node_element_beneath_a_connection_element_with_a_belief_state_by_same_user of elements.rb\n"+
+                     "1     the_element = #{the_element.id} ")
+      
+      if the_element.is_a_connection? ## the_element is a connection element which may/should have a node element it connects from  
+        if options[:element_user_id] ## specifies to only get parts for this element that were created by a particular user. 
+          if options[:belief_user_id]
+            the_node = Element.active.find_by_element_id(the_element.connects_from).by_user(options[:element_user_id]).nodes.active_belief_states_by_user(options[:belief_user_id]).eager_load_belief_states
+          else
+            the_node = Element.active.find_by_element_id(the_element.connects_from).by_user(options[:element_user_id]).nodes
+          end
+        else
+          if options[:belief_user_id]
+            the_node = Element.active.find_by_element_id(the_element.connects_from).nodes.active_belief_states_by_user(options[:belief_user_id]).eager_load_belief_states
+          else
+            the_node = Element.active.find_by_element_id(the_element.connects_from).nodes
+          end
+        end
+        logger.debug(">>>   #in find_the_node_element_beneath_a_connection_element_with_a_belief_state_by_same_user of elements.rb\n"+
+                     "2     the_node to return = #{the_node.all} ")
+        return the_node
+      end
+      return nil
+    end
+    
+    
+    
+    
+
+    def self.find_elements_above_an_element_by_any_author(the_element, options = {:exclude_question_nodes => true}) ## @TODO options take :belief_user_id and
+      logger.debug(">>>  the_element.element_type = #{the_element.element_type}      #in  find_elements_above_an_element_by_any_author  of Element.rb ")
       if the_element.is_a_node?
         ##find any connections from this
-        elements_above = find_elements_above_a_node_element(the_element, options)
+        return Element.robust__all_active_connections_from_an_element(the_element.id) if options[:exclude_question_nodes]
+        return 'not yet implemented the find all connections from a node element including any question nodes'
+        
       elsif the_element.is_a_connection? || the_element.is_a_part_element?
-        elements_above = find_elements_above_a_part_or_connection_element(the_element, options)
+        ## only ever expecting this to be one node element
+        unless the_element.connects_to.nil?
+          a_node = Element.find(the_element.connects_to)
+          return [a_node] unless (options[:exclude_question_nodes] && a_node.is_a_question_node?)
+        end
+        
       end
-      return elements_above
+      
+      return nil
     end
     
     
-    def find_elements_above_a_node_element(the_element, options = {}) ##options take :user_id
-      ##find any connections from this
-      if options.user_id
-        elements_above = Element.robust__all_active_connections_from_an_element_by_a_user(the_element.id, the_element.user_id)
+    
+    def self.evaluate_logical_value_of_elements(array_of_elements_with_belief_states, a_user_id)
+      sum = {:supports  => {:t => 0, :d => 0, :f => 0, :c => 0 },
+             :questions => {:t => 0, :d => 0, :f => 0, :c => 0 },
+             :refutes   => {:t => 0, :d => 0, :f => 0, :c => 0 }}
+      
+      logger.debug(">>>   array_of_elements_with_belief_states = #{array_of_elements_with_belief_states.all}  # in evaluate_logical_value_of_elements  of element.rb")
+      logger.debug(">>>   array_of_elements_with_belief_states.belief_states = #{array_of_elements_with_belief_states.first.belief_states}  # in evaluate_logical_value_of_elements  of element.rb")
+      
+      ##iterate over all these elements and sum their logical support.
+      #  so if they're a connection of type question with a belief state of 't' add it to the appropriate sum
+      #  if they're a node or part then treat them as a "supports" connection
+      array_of_elements_with_belief_states.each {|element|
+        raise "data error detected in 'evaluate_logical_value_of_elements' of elements.rb  for belief states of element.id = #{element.id}  as it has multiple belief states =#{element.belief_states.all}" if element.belief_states.length > 1
+        
+        belief_state = element.belief_states.first.believed_state.to_sym
+        logger.debug(">>>2   # in evaluate_logical_value_of_elements  of element.rb \n"+
+                     "       belief_state = #{belief_state}  for element.id = #{element.id}  ")
+        
+        if element.is_a_connection?
+          connection_subtype = element.subtype.to_sym
+          sum[connection_subtype][belief_state] += 1 unless connection_subtype == :definition
+        elsif element.is_a_node?
+          sum[:supports][belief_state] += 1
+        elsif element.is_a_part?
+          raise "no expecting any parts to be in 'evaluate_logical_value_of_elements' of Element.rb"
+        end
+      }
+      
+      logic_value_of_elements = logical_sum(sum)
+      
+      logger.debug(">>>3   # in evaluate_logical_value_of_elements  of element.rb \n"+
+                   "       logic_value_of_elements = #{logic_value_of_elements}  ")
+      
+      return logic_value_of_elements
+    end
+    
+    
+    
+    ##is expecting input in the form of {:supports  => {:t => 0, :d => 0, :f => 0, :c => 0 },
+    ##                                   :questions => {:t => 0, :d => 0, :f => 0, :c => 0 },
+    ##                                   :refutes   => {:t => 0, :d => 0, :f => 0, :c => 0 }}
+    def self.logical_sum(input)
+      logger.debug(">>>   # in logical_sum  of element.rb \n" +
+                   "      input = #{input}  ")
+      
+      logical_sum_result = {:belief_state => 'c', :d_is_explicit => true } ## :d_is_explicit refers to if the "don't know" outcome is due to it explicitly having 
+      # one of more "questions" elements that are "t" and no "supports" or "refutes" with "t"  or whether there was an implicit "don't know" outcome due to there being no
+      # "questions", "supports" or "refutes" with a "t" believed state
+      
+      ## now decide what the logical AND of these elements is.  Ignoring any 'c'(contradiction) belief states 
+      if (input[:supports][:t] == 0)
+        if (input[:questions][:t] == 0) 
+          if (input[:refutes][:t] == 0)
+            logical_sum_result[:belief_state] = 'd'
+            logical_sum_result[:d_is_explicit] = false
+          else
+            logical_sum_result[:belief_state] = 'f'
+          end
+        else
+          if (input[:refutes][:t] == 0)
+            logical_sum_result[:belief_state] = 'd'
+            logical_sum_result[:d_is_explicit] = true
+          else
+            #default belief_state of 'c'
+          end
+        end
       else
-        elements_above = Element.robust__all_active_connections_from_an_element(the_element.id)
+        if (input[:questions][:t] == 0) 
+          if (input[:refutes][:t] == 0)
+            logical_sum_result[:belief_state] = 't'
+          else
+            #default belief_state of 'c'
+          end
+        else
+          #default belief_state of 'c'
+        end
       end
-      return elements_above
+      
+      return logical_sum_result
     end
     
-    
-    def find_elements_above_a_part_or_connection_element(the_element, options = {}) ##options take :user_id
-      ##get the node that this part or connection connects to
-      if options.user_id
-        node_above = Element.find(the_element.connects_to).by_user(options.user_id) unless the_element.connects_to.nil?
-      else
-        node_above = Element.find(the_element.connects_to) unless the_element.connects_to.nil?
-      end
-      return node_above
-    end
-    
-    
-    
+=begin  
     
     def propagate_belief_state(elements_beneath, the_element, new_belief_state)
       ##first test if there are any elements beneath this element
@@ -350,12 +609,12 @@ private
     
     
     def check_content_is_valid
-      logger.warn(">>> #in check_content_is_valid of element.rb") 
+      logger.warn(">>>   element.id = #{id},  content = #{content},  element_type = #{element_type}, is_a_connection? = #{is_a_connection?} #in check_content_is_valid of element.rb") 
       if is_a_node?
         if content.nil?
           errors.add(:content, "for a node must be > 6 characters  #in check_content_is_valid of element.rb")
         else
-          if content.length < 7
+          if content.length < 1
             errors.add(:content, "for a node must be > 6 characters  #in check_content_is_valid of element.rb")
             logger.error(">>>  content.length = #{content.length} #in check_content_is_valid of element.rb") 
           else
@@ -402,7 +661,7 @@ private
         
       elsif is_a_part_element?
         unless subtype.nil?
-          logger.warn(">>> subtype for this 'part' had a value of '#{subtype}' but it should be left blank.  #in ensure_subtypes_are_valid of element.rb") 
+          logger.warn(">>>  subtype for this 'part' had a value of '#{subtype}' but it should be left blank.  #in ensure_subtypes_are_valid of element.rb") 
           subtype = nil
         end
         return true  ## still return true
@@ -420,25 +679,25 @@ private
     
     
     def ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element
-      logger.debug("element type = #{element_type}, self.new_record? = #{self.new_record?}, self.is_a_part_element? = #{self.is_a_part_element?}.  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
+      logger.debug(">>>  element type = #{element_type}, self.new_record? = #{self.new_record?}, self.is_a_part_element? = #{self.is_a_part_element?}.  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
       ##check if this element is unsaved and of type == 'part'
       if self.new_record? && self.is_a_part_element?
         ## this is a new 'part' element, check if it has a valid parent node
         if id_of_parent_of_part_element.nil?
           ##fail due to lacking any id for it's parent node
-          logger.debug("part element lacks _any_ parent node id   #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
+          logger.debug(">>>  part element lacks _any_ parent node id   #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
           errors.add(:id_of_parent_of_part_element, "for this 'part' is absent  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
         else
           parent_node = Element.find(id_of_parent_of_part_element)
           if parent_node.nil?
             ##fail due to lacking a valid id for it's parent
-            logger.debug(" 'part' element lacks a valid id for it's parent node  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
+            logger.debug(">>>   'part' element lacks a valid id for it's parent node  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
             errors.add(:id_of_parent_of_part_element, "is invalid as it is not present at all  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
           else
             if parent_node.is_a_node?
               return true
             else
-              logger.debug(" 'part' element lacks a valid id for it's parent node  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
+              logger.debug(">>>   'part' element lacks a valid id for it's parent node  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
               errors.add(:id_of_parent_of_part_element, "is invalid as it is not a node but is a #{parent_node.element_type}  #in ensure_presence_of_valid_parent_node_id_if_this_is_a_part_element of element.rb")
             end
           end
